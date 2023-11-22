@@ -142,8 +142,6 @@ join.jsp입니다. request.getParameter()로 각각의 정보를 가져왔습니
 	<jsp:param name="para3" value="파라미터3값4"/>
 </jsp:include>
 
-</body>
-</html>
 ```
 
 보통 jsp: include는 include폴더를 만들어서 거기엔 include파일만 넣습니다.
@@ -178,8 +176,6 @@ if(para3 != null){
 전송 파라미터 1: <%=request.getParameter("para1") %><br>
 전송 파라미터 2: <%=request.getParameter("para2") %><br>
 
-</body>
-</html>
 ```
 
 para3만 문자열 배열로 만들었습니다. 복수 데이터는 getParameterValues로 합니다 단수 데이터들은 getParameter()로 하구요. 그래서 para1,2는 저렇게 썼습니다
@@ -228,8 +224,7 @@ actionmulti.jsp 에서 바로 inc\_act\_multi.jsp로 간 것입니다. 따라서
 		</table>
 	</form>
 
-</body>
-</html>
+	...생략
 ```
 
 아이디와 비밀번호만 쓰고 foam처럼 join\_redirect.jsp로 이동하게 했습니다.
@@ -268,8 +263,6 @@ actionmulti.jsp 에서 바로 inc\_act\_multi.jsp로 간 것입니다. 따라서
 
 	<p><a href="redirect.jsp">[폼으로 돌악가기]</a></p>
 
-</body>
-</html>
 ```
 
 여기선 일단 넘겨받은 id 와 pw를 출력하고 para변수를 만들어 대한민국을 넣었습니다. 그리고 encode\_para를 만들어서 URLENcoder.encode()에 para를 인자로 넣고 그 정보를 변수에 넣었습니다. 그리고 reponse.sendRedirect()를 사용하여 그 인자에
@@ -297,8 +290,6 @@ String para= request.getParameter("para");
 
 out.print("파라미터 = "+para);
 %>
-</body>
-</html>
 ```
 
 마지막 jsp파일입니다. 전 파일에서 가져온 para를 출력합니다. 이제 redirect파일을 실행해봅시다.
