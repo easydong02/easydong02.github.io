@@ -9,7 +9,7 @@ future: true
 
 이번 시간에는 세션을 만들어서 로그인 폼을 만들어보고 JSP로 DB와 연동해보겠습니다!
 
-<loginForm.jsp>
+**<loginForm.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -75,7 +75,7 @@ future: true
 
 그리고 로그인이 되어있으면 로그인 버튼을, 로그인이 안 됐으면 로그아웃 버튼을 비활성화 시켰습니다.
 
-<loginCheck.jsp>
+**<loginCheck.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -118,7 +118,7 @@ future: true
 
 그래서 들어온 값들이 아이디와 비번이 일치하면 setAttribute()로 cust\_id와 cust\_name를 생성합니다. 그리고 아까의 로그인폼으로 다시 돌아가는 링크를 만들었습니다. 이제 로그아웃도 만들어야겠죠?
 
-<logout.jsp>
+**<logout.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"

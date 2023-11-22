@@ -9,7 +9,7 @@ future: true
 
 이번 시간에는 jsp로 DB에 여러가지를 해보겠습니다! 여기서는 학생등록 폼을 만들어서 그것을 DB에 넣고 행도 삽입하고 확인해보겠습니다!
 
-<dbcreate.jsp>
+**<dbcreate.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -85,7 +85,7 @@ future: true
 
 잘 만들어졌네요 ㅎㅎ 이제 테이블을 만들어볼까요?
 
-<createTable.jsp>
+**<createTable.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -173,7 +173,7 @@ future: true
 
 이제 여기에 삽입할 행을 하나씩 만듭시다. 그건 이제 폼을 만들어서 전송하는걸로!
 
-<formstudent.jsp>
+**<formstudent.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -324,7 +324,7 @@ finally{
 
 이제 다 끝났지만 들어간 데이터를 자바로 확인까지 해보겠습니다!
 
-<formStudentTable.jsp>
+**<formStudentTable.jsp>**
 
 ```
 <html>
