@@ -186,7 +186,7 @@ actionmulti.jsp 에서 바로 inc\_act\_multi.jsp로 간 것입니다. 따라서
 
 이번엔 3개를 연결해보겠습니다.
 
-<redirect.jsp>
+**<redirect.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -229,7 +229,7 @@ actionmulti.jsp 에서 바로 inc\_act\_multi.jsp로 간 것입니다. 따라서
 
 아이디와 비밀번호만 쓰고 foam처럼 join\_redirect.jsp로 이동하게 했습니다.
 
-<join\_redirect.jsp>
+**<join\_redirect.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -269,7 +269,7 @@ actionmulti.jsp 에서 바로 inc\_act\_multi.jsp로 간 것입니다. 따라서
 
 "redirect\_check.jsp?para=" + encode\_para 를 넣었는데 이것은 redirect\_check.jsp로 이동하는데 물음표 뒷부분 para = encode\_para를 갖고 가라는 거죠.
 
-<redirect\_check.jsp>
+**<redirect\_check.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -320,7 +320,7 @@ out.print("파라미터 = "+para);
 
 쿠키는 비연결 비상태유지에 대한 문제점을 해결하는 방법 중 하나입니다. 쿠키를 사용하여 클라이언트의 정보를 웹서버로 전송할 수 있습니다. 웹서버는 전송받은 정보를 확인해서 이전과 동일인인지 여부를 확인할 수 있습니다. 생성된 쿠키는 클라이언트에 저장되어 삭제되기 전 또는 브라우저를 종료하더라도 유효시간 이전에는 계속해서 전송됩니다.
 
-<cookieExam.jsp>
+**<cookieExam.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -348,7 +348,7 @@ out.print("파라미터 = "+para);
 
 Cookie 객체 cookie를 만들어서 쿠키 이름은 id 값은 pass로 했습니다. 쿠키의 유효시간은 setMaxAge()로 300초로 했습니다. 그 다음 response.addCookie()로 그 쿠키를 추가했습니다. 그다음 쿠키 삭제 버튼을 만들어서 쿠키삭제 파일로 이동하게 했습니다.
 
-<cookieDelete.jsp>
+**<cookieDelete.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
@@ -378,7 +378,7 @@ Cookie 객체 cookie를 만들어서 쿠키 이름은 id 값은 pass로 했습�
 
 여기선 getCookies()로 저장된 쿠키를 다 가져왔습니다. 그리고 for문으로 쿠키 유효시간들을 다 0초로 만들었습니다. 사실상 없애는거죠. 그리고 버튼을 만들어서 쿠키확인을 하도록 하겠습니다.
 
-<cookieCheck.jsp>
+**<cookieCheck.jsp>**
 
 ```
 <%@ page language="java" contentType="text/html; charset=UTF-8"
