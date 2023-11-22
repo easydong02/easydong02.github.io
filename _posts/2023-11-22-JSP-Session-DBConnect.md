@@ -68,7 +68,6 @@ future: true
 
 
 </body>
-</html>
 ```
 
 로그인 폼을 만들었습니다. cust\_id와 cust\_name을 만들었습니다. getAttribute()로 세션의 아이디와 이름을 가져오는데 없으면 null이겠죠? 그래서 boolean타입의 login을 만들었습니다. false로 초기화를 했습니다. 앞으로 이 변수의 값을 이용해서 로그인의 유무를 판단합니다.
@@ -115,7 +114,6 @@ future: true
 <a href="./loginForm.jsp">[로그인 폼]</a>
 
 </body>
-</html>
 ```
 
 로그인폼에서 적은 아이디와 비밀번호를 체크하는 jsp입니다. id 와 pw를 미리 정했습니다. 나중에는 db와 연동해서 각자의 계정을 만들 수 있겠죠?
@@ -143,7 +141,6 @@ future: true
 
 <a href="./loginForm.jsp">[세션 삭제 확인]</a>
 </body>
-</html>
 ```
 
 이 페이지로 넘어오면 session.invalidate()로 세션정보를 모두 삭제합니다. 그리고 다시 로그인 폼으로 가겠습니다.
@@ -214,7 +211,6 @@ future: true
 	}
 %>
 </body>
-</html>
 ```
 
 먼저 문자열 driverClass를 만들고 "org.mariadb.jdbc.Driver"를 대입했습니다. 그리고 try 문으로 Class.forName()인자에 driverClass를 넣었습니다. 잘 되면 성공문을 출력하고 아니면 실패를 출력하게 했습니다. 이미 설정을 다 끝내놔서 잘 연동됐을겁니다!
