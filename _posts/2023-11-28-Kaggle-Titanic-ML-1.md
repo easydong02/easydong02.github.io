@@ -7,53 +7,6 @@ render_with_liquid: false
 future: true
 ---
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML-full,Safe"></script><script type="text/x-mathjax-config">init_mathjax = function() { if (window.MathJax) { // MathJax loaded MathJax.Hub.Config({ TeX: { equationNumbers: { autoNumber: "AMS", useLabelIds: true } }, tex2jax: { inlineMath: [ ['$','$'], ["\\(","\\)"] ], displayMath: [ ['$$','$$'], ["\\[","\\]"] ], processEscapes: true, processEnvironments: true }, displayAlign: 'center', CommonHTML: { linebreaks: { automatic: true } } }); MathJax.Hub.Queue(["Typeset", MathJax.Hub]); } } init_mathjax();</script>
-
-In \[2\]:
-
-```
-!pip install missingno
-```
-
-```
-Collecting missingno
-  Downloading missingno-0.5.1-py3-none-any.whl (8.7 kB)
-Requirement already satisfied: numpy in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from missingno) (1.22.3)
-Requirement already satisfied: scipy in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from missingno) (1.8.0)
-Requirement already satisfied: matplotlib in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from missingno) (3.5.1)
-Requirement already satisfied: seaborn in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from missingno) (0.11.2)
-Requirement already satisfied: pyparsing>=2.2.1 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (3.0.7)
-Requirement already satisfied: cycler>=0.10 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (0.11.0)
-Requirement already satisfied: pillow>=6.2.0 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (9.1.0)
-Requirement already satisfied: python-dateutil>=2.7 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (2.8.2)
-Requirement already satisfied: kiwisolver>=1.0.1 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (1.4.2)
-Requirement already satisfied: fonttools>=4.22.0 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (4.31.2)
-Requirement already satisfied: packaging>=20.0 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from matplotlib->missingno) (21.3)
-Requirement already satisfied: pandas>=0.23 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from seaborn->missingno) (1.4.2)
-Requirement already satisfied: pytz>=2020.1 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from pandas>=0.23->seaborn->missingno) (2022.1)
-Requirement already satisfied: six>=1.5 in c:\users\easyd\miniforge3\envs\easydong2\lib\site-packages (from python-dateutil>=2.7->matplotlib->missingno) (1.16.0)
-Installing collected packages: missingno
-Successfully installed missingno-0.5.1
-```
-
-In \[2\]:
-
-```
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-plt.style.use('seaborn')
-
-import missingno as msno
-
-#ignore warnings
-import warnings
-warnings.filterwarnings('ignore')
-
-%matplotlib inline
-```
-
 In \[4\]:
 
 ```
