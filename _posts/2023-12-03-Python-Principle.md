@@ -1,8 +1,8 @@
 ---
-title: Tool - 파이썬
+title: 개념 자료형 연산 조건문
 date: 2023-12-02 00:00:00 +0900
-categories: [Bigdata-AI, Visualization]
-tags: [bigdata, visualization]
+categories: [Programming-Language, Python]
+tags: [python]
 render_with_liquid: false
 future: true
 ---
