@@ -61,7 +61,7 @@ url = input('웹페이지 주소를 입력하셔요')
 print(getweb(url))
 ```
 
-이것은 웹주소를 입력하면 그 웹페이지를 HTML형식으로 볼 수 있습니다. import로 urlib.request를 가져오고 uropen()메서드를 이용해 url을 response에 넣어주고 그걸을 다시 read()메서드 로 data에 넣어준 뒤 utf-8로 디코딩했씁니다. 저는 [http://www.naver.com을](http://www.naver.com을) 입력했습니다
+이것은 웹주소를 입력하면 그 웹페이지를 HTML형식으로 볼 수 있습니다. import로 urlib.request를 가져오고 uropen()메서드를 이용해 url을 response에 넣어주고 그걸을 다시 read()메서드 로 data에 넣어준 뒤 utf-8로 디코딩했씁니다. 저는 http://www.naver.com을 입력했습니다
 
 ![Desktop View](/assets/img/Programming-Language/Python/Format/2.png)
 
