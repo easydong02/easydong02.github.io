@@ -7,7 +7,7 @@ render_with_liquid: false
 future: true
 ---
 
-# 1.Spring data jpa와 사용법
+# Spring data jpa와 사용법
 
 ## Spring data jpa?
 

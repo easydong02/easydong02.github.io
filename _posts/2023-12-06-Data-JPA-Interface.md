@@ -7,7 +7,7 @@ render_with_liquid: false
 future: true
 ---
 
-# 2. 공통인터페이스
+# 공통인터페이스
 
 ## JPA VS Data JPA
 
