@@ -1,7 +1,7 @@
 ---
 title: 파이썬으로 가상화폐 정보 조회하기
 date: 2023-12-10 00:00:00 +0900
-categories: [Bigdata-AI, EDA]
+categories: [Bigdata-AI, Visualization]
 tags: [cryptocurrency, coin]
 render_with_liquid: false
 future: true
