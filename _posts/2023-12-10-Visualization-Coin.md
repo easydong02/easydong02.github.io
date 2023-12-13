@@ -42,7 +42,7 @@ app.exec_()
 
 먼저 uic를 임포트했습니다 uic로 ui파일을 불러올 수 있습니다. ui파일은 뭘까요? qt designer의 파일 형식입니다. 보통 우리는 gui를 만들 때 다 일일이 코드로 짰는데.. 이걸 사용하면 편합니다. 저는 파이썬을 아나콘다로 깔았는데 설치경로에 이게 있습니다~
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/1.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/1.png)
 
 이렇게 코드가 아닌 샘플 형식으로 여기서 갖고 놀 수 있습니다.. 정말 편하죠?이것을 연결만 하면 됩니다!
 
@@ -54,7 +54,7 @@ price = pybithumb.get_current_price("BTC")
 
 라는 문장이 있는데 어떤 뜻일까요? 빗썸에서 가져온 자료 중 현재의 가격을 가져오는 get_current_price()함수의 매개변수에 "BTC"를 넣었네요. 이것은 .. 맞습니다 그 비트코인입니다. 마찬가지로 ETH, 이더리움도 가져와서 price2에 넣었습니다. 그리고 lineEdit에 setText()로 그 값을 담았는데요 lineEdit은 무엇일까요?
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/2.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/2.png)
 
 이런 식으로 qt designer에는 어떤 컴포넌트를 누르면 그것에 대한 객체정보가 나옵니다. 그 이름중에 텍스트라인입니다!
 
@@ -67,7 +67,7 @@ app.exec_()
 
 마지막으로 만들어진 MyWindow()클래스를 호출하는 메서드 show()와 프로그램 실행 코드를 작성하였습니다. 실행해볼까요?
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/3.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/3.png)
 
 우와.. 가상화폐의 현재가격이 출력되었습니다! 재밌네용 ㅎㅎㅎㅎㅎ
 
@@ -126,7 +126,7 @@ app.exec_()
 
 inquiry()메서드안에 있는 코드입니다. 현재 시간을 cur_time에 넣고 그것을 문자열로 바꾼 뒤 str_time에 넣고 그것을 statusBar, 상태바에 나타내도록 하였습니다! 실행해볼까요?
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/4.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/4.png)
 
 조회 버튼을 없애고 자동 실행에 좌측 하단에 현재시간이 나옵니다~ 이제 계속 가상화폐의 현재가를 가져오겠죠?
 
@@ -147,7 +147,7 @@ print(orderbook)
 
 orderbook이라는 변수에 빗썸에 있는 BTC의 orderbook을 가져왔습니다. 뭐가 출력될까요?
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/5.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/5.png)
 
 엄청많네요... 일단 우리가 알 수 있는건 이것이 키값과 밸류로 이루어진 딕셔너리라는 것이죠! 그중에 현재 주문에 대한 정보를 다 담고있습니다!
 
@@ -162,7 +162,7 @@ for bid in bids:
 
 그중 bids키를 넣어서 밸류값을 출력하겠습니다 bids는 매수입니다. 그리고 for문으로 그 안의 원소들을 출력해볼게요!
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/6.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/6.png)
 
 현재 가격과 거래량이 주루룩 나옵니다~
 
@@ -185,7 +185,7 @@ else:
 
 이 것은 무엇일까요? 일단 df라는 변수에 비트코인에 대한 get_ohlcv()메서드가 있군요! 이것은 시가,고가,저가,종가,거래량을 보여줍니다 ! 이것도 딕셔너리의 형식입니다 이중 c에 해당되는 close키값은 그 화폐의 모든 날의 종가를 보여줍니다. 그래서 df\['close'\]는 그것을 담고 있겠네요. 그런데 그 뒤에 rolling(window=5).mean()이 보이네요? 이것은 모든 날의 이전 5일간의 평균입니다. 따라서 종합하면 ma5에는 비트코인의 모든날의 5일간의 종가평균을 보여주겠네요! 그리고 last_ma5=ma5\[-1\]는 그 모든날의 마지막 리스트 원소니까 오늘이겠죠? 그리고 price에는 비트코인의 현재가를 담았습니다. 그래서 현재가가 지난 5일간의 평균보다 높으면 상승장, 아니면 하락장을 출력하도록했습니다! 실행해볼까요?
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/7.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/7.png)
 
 하락장이네요 ㅎㅎ;
 
@@ -229,7 +229,7 @@ else:
 
 그 다음엔 모든 종목을 tickers변수에 담았습니다. 그래서 for문으로 tickers의 원소 하나하나를 all()함수에 넣어 상승장이면 tup을 1증가 시키고 하락장이면 tdown을 1증가시킵니다. 그리고 마지막에 그 수를 비교해서 전체상승인지 하락인지 판단해보겠습니다!
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Coin/8.png)
+![Desktop View](/assets/img/Bigdata-AI/Visualization/Coin/8.png)
 
 시간이 좀걸렸네요 모든 코인을 조사해야하니까 ㅎㅎ 결국 전체하락장으로 판명났습니다 ㅎㅎ 돔황챠!!
 
