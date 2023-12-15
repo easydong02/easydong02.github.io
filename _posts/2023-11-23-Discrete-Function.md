@@ -1,5 +1,5 @@
 ---
-title: 함수 수열 관계
+title: [이산수학] 함수 수열 관계
 date: 2023-11-23 00:00:00 +0900
 categories: [Math, 이산수학]
 tags: [math, discretemath]

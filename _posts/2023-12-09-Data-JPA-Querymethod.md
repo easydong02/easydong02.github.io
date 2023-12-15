@@ -1,5 +1,5 @@
 ---
-title: 쿼리 메소드
+title: [Spring Data JPA] 쿼리 메소드
 date: 2023-12-09 00:00:00 +0900
 categories: [Database, Spring-Data-JPA]
 tags: [springdatajpa, querymethod]

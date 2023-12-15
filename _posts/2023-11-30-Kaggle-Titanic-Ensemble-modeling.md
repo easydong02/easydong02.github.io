@@ -1,5 +1,5 @@
 ---
-title: 타이타닉 앙상블 모델링
+title: [Machine Learning] 타이타닉 앙상블 모델링
 date: 2023-11-30 00:00:00 +0900
 categories: [Bigdata-AI, Kaggle]
 tags: [titanic, eda, machinelearning]

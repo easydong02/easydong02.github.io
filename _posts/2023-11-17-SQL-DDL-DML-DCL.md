@@ -1,5 +1,5 @@
 ---
-title: DML DCL DDL 집계함수
+title: [SQL] DML DCL DDL 집계함수
 date: 2023-11-17 00:00:00 +0900
 categories: [Database, SQL]
 tags: [oracle, sql]

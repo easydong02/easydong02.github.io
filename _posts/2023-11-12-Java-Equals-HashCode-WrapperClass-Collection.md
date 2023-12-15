@@ -1,5 +1,5 @@
 ---
-title: equals 재정의 hashCode Wrapper클래스 Collection
+title: [Java] equals 재정의 hashCode Wrapper클래스 Collection
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

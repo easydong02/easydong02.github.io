@@ -1,5 +1,5 @@
 ---
-title: 물리 메모리 관리
+title: [CS] 물리 메모리 관리
 date: 2023-12-15 00:00:00 +0900
 categories: [Computer-Science]
 tags: [computerscience, cs]

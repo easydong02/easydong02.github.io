@@ -1,5 +1,5 @@
 ---
-title: 동적 구현(DB)
+title: [JSP] 동적 구현(DB)
 date: 2023-11-22 00:00:00 +0900
 categories: [Frontend, JSP]
 tags: [jsp]

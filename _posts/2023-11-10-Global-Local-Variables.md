@@ -1,5 +1,5 @@
 ---
-title: 지역변수와 전역변수
+title: [C] 지역변수와 전역변수
 date: 2023-11-10 14:10:00 +0900
 categories: [Programming-Language, C]
 tags: [c]

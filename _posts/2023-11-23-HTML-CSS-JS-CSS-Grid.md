@@ -1,5 +1,5 @@
 ---
-title: CSS 그리드(grid)
+title: [Frontend] CSS 그리드(grid)
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [css, grid]

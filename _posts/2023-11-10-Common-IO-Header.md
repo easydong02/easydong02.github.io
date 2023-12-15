@@ -1,5 +1,5 @@
 ---
-title: 표준 입출력 헤더와 출력
+title: [C] 표준 입출력 헤더와 출력
 date: 2023-11-10 14:10:00 +0900
 categories: [Programming-Language, C]
 tags: [c]

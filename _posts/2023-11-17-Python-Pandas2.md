@@ -1,5 +1,5 @@
 ---
-title: 판다스(Pandas) - DataFrame
+title: [Python] 판다스(Pandas) - DataFrame
 date: 2023-11-17 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

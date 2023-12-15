@@ -1,5 +1,5 @@
 ---
-title: 판다스(Pandas) - Series
+title: [Python] 판다스(Pandas) - Series
 date: 2023-11-17 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

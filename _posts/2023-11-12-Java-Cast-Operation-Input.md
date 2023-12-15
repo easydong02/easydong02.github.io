@@ -1,5 +1,5 @@
 ---
-title: 형변환 연산 입력
+title: [Java] 형변환 연산 입력
 date: 2023-11-12 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

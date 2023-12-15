@@ -1,5 +1,5 @@
 ---
-title: 조건식 연산자 제어문
+title: [Java] 조건식 연산자 제어문
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

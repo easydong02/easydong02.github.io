@@ -1,5 +1,5 @@
 ---
-title: Prologue
+title: [Java] Prologue
 date: 2023-11-11 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

@@ -1,5 +1,5 @@
 ---
-title: 상속
+title: [Java] 상속
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

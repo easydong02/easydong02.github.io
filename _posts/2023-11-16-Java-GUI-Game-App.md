@@ -1,5 +1,5 @@
 ---
-title: Java GUI로 게임 만들기 1
+title: [Java] Java GUI로 게임 만들기 1
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

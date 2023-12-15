@@ -1,5 +1,5 @@
 ---
-title: 집합과 논리
+title: [이산수학] 집합과 논리
 date: 2023-11-23 00:00:00 +0900
 categories: [Math, 이산수학]
 tags: [math, discretemath]

@@ -1,5 +1,5 @@
 ---
-title: 상속(Extends) 형변환(Casting)
+title: [Java] 상속(Extends) 형변환(Casting)
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

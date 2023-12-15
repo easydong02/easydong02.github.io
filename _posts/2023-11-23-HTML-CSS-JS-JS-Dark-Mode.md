@@ -1,5 +1,5 @@
 ---
-title: Javascript로 다크모드 만들기
+title: [Frontend] Javascript로 다크모드 만들기
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [javascript]

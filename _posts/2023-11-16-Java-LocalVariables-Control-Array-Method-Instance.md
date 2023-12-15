@@ -1,5 +1,5 @@
 ---
-title: 지역변수 제어문 배열 메서드 객체
+title: [Java] 지역변수 제어문 배열 메서드 객체
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

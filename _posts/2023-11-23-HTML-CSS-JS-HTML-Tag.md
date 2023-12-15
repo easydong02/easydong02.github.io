@@ -1,5 +1,5 @@
 ---
-title: HTML 태그들
+title: [Frontend] HTML 태그들
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [html, tag]

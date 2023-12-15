@@ -1,5 +1,5 @@
 ---
-title: 익명클래스 예외처리
+title: [Java] 익명클래스 예외처리
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

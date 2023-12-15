@@ -1,5 +1,5 @@
 ---
-title: 보스턴 부동산 가격 분석
+title: [EDA] 보스턴 부동산 가격 분석
 date: 2023-11-27 00:00:00 +0900
 categories: [Bigdata-AI, EDA]
 tags: [bostonhousing, eda]

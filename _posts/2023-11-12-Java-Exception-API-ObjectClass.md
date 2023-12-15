@@ -1,5 +1,5 @@
 ---
-title: 예외처리 응용, API, Object클래스
+title: [Java] 예외처리 응용, API, Object클래스
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]
