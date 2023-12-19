@@ -1,5 +1,5 @@
 ---
-title: [이산수학] 데이터 정리와 확률
+title: "[이산수학] 데이터 정리와 확률"
 date: 2023-11-24 00:00:00 +0900
 categories: [Math, 이산수학]
 tags: [math, discretemath, probability]

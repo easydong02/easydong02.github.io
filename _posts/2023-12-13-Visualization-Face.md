@@ -1,5 +1,5 @@
 ---
-title: [시각화] 얼굴 인식, 닮은꼴 프로그램
+title: "[시각화] 얼굴 인식, 닮은꼴 프로그램"
 date: 2023-12-13 00:00:00 +0900
 categories: [Bigdata-AI, Visualization]
 tags: [visualization]

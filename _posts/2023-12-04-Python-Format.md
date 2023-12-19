@@ -1,5 +1,5 @@
 ---
-title: [Python] 패킹 포맷
+title: "[Python] 패킹 포맷"
 date: 2023-12-04 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

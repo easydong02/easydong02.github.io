@@ -1,5 +1,5 @@
 ---
-title: [Frontend] CSS로 웹페이지 만들기
+title: "[Frontend] CSS로 웹페이지 만들기"
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [css, javascript]

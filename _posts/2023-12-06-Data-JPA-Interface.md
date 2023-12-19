@@ -1,5 +1,5 @@
 ---
-title: [Spring Data JPA] 공통 인터페이스
+title: "[Spring Data JPA] 공통 인터페이스"
 date: 2023-12-06 00:00:00 +0900
 categories: [Database, Spring-Data-JPA]
 tags: [springdatajpa]

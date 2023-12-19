@@ -1,5 +1,5 @@
 ---
-title: [이산수학] 행렬
+title: "[이산수학] 행렬"
 date: 2023-11-24 00:00:00 +0900
 categories: [Math, 이산수학]
 tags: [math, discretemath, matrix]

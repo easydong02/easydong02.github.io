@@ -1,5 +1,5 @@
 ---
-title: [Frontend] Javascript 원버튼 다크모드
+title: "[Frontend] Javascript 원버튼 다크모드"
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [javascript]

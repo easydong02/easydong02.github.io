@@ -1,5 +1,5 @@
 ---
-title: [JSP] 여러가지 액션태그와 쿠키
+title: "[JSP] 여러가지 액션태그와 쿠키"
 date: 2023-11-22 00:00:00 +0900
 categories: [Frontend, JSP]
 tags: [jsp]

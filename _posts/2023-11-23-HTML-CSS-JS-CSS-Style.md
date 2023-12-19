@@ -1,5 +1,5 @@
 ---
-title: [Frontend] CSS style
+title: "[Frontend] CSS style"
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [css, style]

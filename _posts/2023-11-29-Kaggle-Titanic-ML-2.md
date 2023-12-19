@@ -1,5 +1,5 @@
 ---
-title: [Machine Learning] 타이타닉 생존자 머신러닝 -2-
+title: "[Machine Learning] 타이타닉 생존자 머신러닝 -2-"
 date: 2023-11-29 00:00:00 +0900
 categories: [Bigdata-AI, Kaggle]
 tags: [titanic, eda, machinelearning]

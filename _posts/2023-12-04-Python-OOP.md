@@ -1,5 +1,5 @@
 ---
-title: [Python] OOP 딕셔너리 datetime
+title: "[Python] OOP 딕셔너리 datetime"
 date: 2023-12-04 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

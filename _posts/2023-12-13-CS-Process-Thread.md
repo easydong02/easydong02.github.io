@@ -1,5 +1,5 @@
 ---
-title: [CS] 프로세스와 스레드
+title: "[CS] 프로세스와 스레드"
 date: 2023-12-13 00:00:00 +0900
 categories: [Computer-Science]
 tags: [computerscience, cs]

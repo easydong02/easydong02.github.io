@@ -1,5 +1,5 @@
 ---
-title: [JPA] 값 타입
+title: "[JPA] 값 타입"
 date: 2023-11-26 00:00:00 +0900
 categories: [Database, JPA]
 tags: [jpa, hibernate]

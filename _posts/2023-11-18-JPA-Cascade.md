@@ -1,5 +1,5 @@
 ---
-title: [JPA] 영속성 전이(Cascade)
+title: "[JPA] 영속성 전이(Cascade)"
 date: 2023-11-18 00:00:00 +0900
 categories: [Database, JPA]
 tags: [oracle, sql]

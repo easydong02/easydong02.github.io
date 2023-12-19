@@ -1,5 +1,5 @@
 ---
-title: [Python] 함수 사용자입력 반복문 클래스
+title: "[Python] 함수 사용자입력 반복문 클래스"
 date: 2023-12-04 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

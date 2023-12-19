@@ -1,5 +1,5 @@
 ---
-title: [EDA] 타이타닉 생존자 분석
+title: "[EDA] 타이타닉 생존자 분석"
 date: 2023-11-27 00:00:00 +0900
 categories: [Bigdata-AI, EDA]
 tags: [titanic, eda]

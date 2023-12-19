@@ -1,5 +1,5 @@
 ---
-title: [SQL] 시퀀스 조인 외래키
+title: "[SQL] 시퀀스 조인 외래키"
 date: 2023-11-17 00:00:00 +0900
 categories: [Database, SQL]
 tags: [oracle, sql]

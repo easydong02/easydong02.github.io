@@ -1,5 +1,5 @@
 ---
-title: [Frontend] 부트스트랩
+title: "[Frontend] 부트스트랩"
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [html, bootstrap]

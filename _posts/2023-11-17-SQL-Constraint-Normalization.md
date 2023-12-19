@@ -1,5 +1,5 @@
 ---
-title: [SQL] 제약조건 정규화
+title: "[SQL] 제약조건 정규화"
 date: 2023-11-17 00:00:00 +0900
 categories: [Database, SQL]
 tags: [oracle, sql]

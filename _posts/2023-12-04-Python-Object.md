@@ -1,5 +1,5 @@
 ---
-title: [Python] 객체 클래스 생성자 모듈 예외처리
+title: "[Python] 객체 클래스 생성자 모듈 예외처리"
 date: 2023-12-04 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

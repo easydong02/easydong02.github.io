@@ -1,5 +1,5 @@
 ---
-title: [Python] 넘파이(Numpy)
+title: "[Python] 넘파이(Numpy)"
 date: 2023-11-17 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

@@ -1,5 +1,5 @@
 ---
-title: [Python] 개념 자료형 연산 조건문
+title: "[Python] 개념 자료형 연산 조건문"
 date: 2023-12-02 00:00:00 +0900
 categories: [Programming-Language, Python]
 tags: [python]

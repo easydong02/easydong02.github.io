@@ -1,5 +1,5 @@
 ---
-title: [SQL] 연습문제(생성 삽입 조회)
+title: "[SQL] 연습문제(생성 삽입 조회)"
 date: 2023-11-17 00:00:00 +0900
 categories: [Database, SQL]
 tags: [oracle, sql]

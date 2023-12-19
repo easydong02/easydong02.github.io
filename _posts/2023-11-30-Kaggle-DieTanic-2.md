@@ -1,5 +1,5 @@
 ---
-title: [Machine Learning] DieTanic EDA 예측 -2-
+title: "[Machine Learning] DieTanic EDA 예측 -2-"
 date: 2023-11-30 00:00:00 +0900
 categories: [Bigdata-AI, Kaggle]
 tags: [titanic, eda, machinelearning]

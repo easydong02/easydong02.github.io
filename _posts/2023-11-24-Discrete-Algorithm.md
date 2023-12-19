@@ -1,5 +1,5 @@
 ---
-title: [이산수학] 알고리즘
+title: "[이산수학] 알고리즘"
 date: 2023-11-24 00:00:00 +0900
 categories: [Math, 이산수학]
 tags: [math, discretemath, algorithm]

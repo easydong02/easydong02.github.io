@@ -1,5 +1,5 @@
 ---
-title: [Frontend] CSS 웹페이지 꾸미기
+title: "[Frontend] CSS 웹페이지 꾸미기"
 date: 2023-11-23 00:00:00 +0900
 categories: [Frontend, HTML-CSS-JS]
 tags: [javascript, css]
