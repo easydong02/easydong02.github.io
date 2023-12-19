@@ -1,7 +1,7 @@
 ---
 title: "[JPA] 즉시(Eager)로딩 지연(Lazy)로딩"
 date: 2023-11-16 00:00:00 +0900
-categories: [Database, JPA]
+categories: [Backend, JPA]
 tags: [jpa, lazy, eager]
 render_with_liquid: false
 future: true

@@ -1,7 +1,7 @@
 ---
 title: "[Spring Data JPA] 네임드 쿼리"
 date: 2023-12-09 00:00:00 +0900
-categories: [Database, Spring-Data-JPA]
+categories: [Backend, Spring-Data-JPA]
 tags: [springdatajpa, namedquery]
 render_with_liquid: false
 future: true

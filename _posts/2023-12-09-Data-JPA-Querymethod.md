@@ -1,7 +1,7 @@
 ---
 title: "[Spring Data JPA] 쿼리 메소드"
 date: 2023-12-09 00:00:00 +0900
-categories: [Database, Spring-Data-JPA]
+categories: [Backend, Spring-Data-JPA]
 tags: [springdatajpa, querymethod]
 render_with_liquid: false
 future: true

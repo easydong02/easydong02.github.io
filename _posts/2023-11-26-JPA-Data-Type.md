@@ -1,7 +1,7 @@
 ---
 title: "[JPA] 값 타입"
 date: 2023-11-26 00:00:00 +0900
-categories: [Database, JPA]
+categories: [Backend, JPA]
 tags: [jpa, hibernate]
 render_with_liquid: false
 future: true

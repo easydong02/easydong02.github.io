@@ -1,7 +1,7 @@
 ---
 title: "[Spring Data JPA] 임베디드 타입"
 date: 2023-12-07 00:00:00 +0900
-categories: [Database, Spring-Data-JPA]
+categories: [Backend, Spring-Data-JPA]
 tags: [springdatajpa]
 render_with_liquid: false
 future: true

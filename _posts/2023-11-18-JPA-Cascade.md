@@ -1,7 +1,7 @@
 ---
 title: "[JPA] 영속성 전이(Cascade)"
 date: 2023-11-18 00:00:00 +0900
-categories: [Database, JPA]
+categories: [Backend, JPA]
 tags: [oracle, sql]
 render_with_liquid: false
 future: true

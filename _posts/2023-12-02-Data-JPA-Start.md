@@ -1,7 +1,7 @@
 ---
 title: "[Spring Data JPA] Spring Data Jpa와 사용법"
 date: 2023-12-02 00:00:00 +0900
-categories: [Database, Spring-Data-JPA]
+categories: [Backend, Spring-Data-JPA]
 tags: [jpa, springdatajpa]
 render_with_liquid: false
 future: true
