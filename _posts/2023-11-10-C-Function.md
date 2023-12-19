@@ -1,5 +1,5 @@
 ---
-title: [C] 함수
+title: "[C] 함수"
 date: 2023-11-10 14:10:00 +0900
 categories: [Programming-Language, C]
 tags: [c]

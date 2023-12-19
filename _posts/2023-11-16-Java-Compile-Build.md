@@ -1,5 +1,5 @@
 ---
-title: [Java] 수동 컴파일, 수동 빌드 실행
+title: "[Java] 수동 컴파일, 수동 빌드 실행"
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

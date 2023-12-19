@@ -1,5 +1,5 @@
 ---
-title: [Java] 클래스 메소드 문제
+title: "[Java] 클래스 메소드 문제"
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

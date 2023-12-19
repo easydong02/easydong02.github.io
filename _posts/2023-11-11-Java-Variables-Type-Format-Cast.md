@@ -1,5 +1,5 @@
 ---
-title: [Java] 변수 자료형 서식문자 형변환
+title: "[Java] 변수 자료형 서식문자 형변환"
 date: 2023-11-11 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

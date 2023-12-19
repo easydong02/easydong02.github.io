@@ -1,5 +1,5 @@
 ---
-title: [Java] 변수(Variables) 연산자(Operation)
+title: "[Java] 변수(Variables) 연산자(Operation)"
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

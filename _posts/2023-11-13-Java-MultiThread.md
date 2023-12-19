@@ -1,5 +1,5 @@
 ---
-title: [Java] 멀티쓰레드(MultiThread)
+title: "[Java] 멀티쓰레드(MultiThread)"
 date: 2023-11-13 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

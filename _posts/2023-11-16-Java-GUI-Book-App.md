@@ -1,5 +1,5 @@
 ---
-title: [Java] Java GUI로 도서어플 만들기
+title: "[Java] Java GUI로 도서어플 만들기"
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

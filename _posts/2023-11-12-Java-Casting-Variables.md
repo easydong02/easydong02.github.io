@@ -1,5 +1,5 @@
 ---
-title: [Java] 캐스팅 변수
+title: "[Java] 캐스팅 변수"
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

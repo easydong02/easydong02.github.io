@@ -1,5 +1,5 @@
 ---
-title: [Java] 클래스 객체 생성자 은닉성
+title: "[Java] 클래스 객체 생성자 은닉성"
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

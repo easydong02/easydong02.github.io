@@ -1,5 +1,5 @@
 ---
-title: [Java] 추상클래스 인터페이스
+title: "[Java] 추상클래스 인터페이스"
 date: 2023-11-12 14:10:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

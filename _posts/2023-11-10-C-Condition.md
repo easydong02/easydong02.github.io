@@ -1,5 +1,5 @@
 ---
-title: [C] 조건문
+title: "[C] 조건문"
 date: 2023-11-10 14:10:00 +0900
 categories: [Programming-Language, C]
 tags: [c]

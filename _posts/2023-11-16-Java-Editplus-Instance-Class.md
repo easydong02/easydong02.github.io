@@ -1,5 +1,5 @@
 ---
-title: [Java] Editplus 객체 클래스
+title: "[Java] Editplus 객체 클래스"
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]

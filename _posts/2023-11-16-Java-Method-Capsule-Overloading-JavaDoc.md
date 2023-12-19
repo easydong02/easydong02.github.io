@@ -1,5 +1,5 @@
 ---
-title: [Java] 메서드 은닉화 다형성 자바Doc
+title: "[Java] 메서드 은닉화 다형성 자바Doc"
 date: 2023-11-16 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java]
