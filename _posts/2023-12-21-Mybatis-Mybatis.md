@@ -11,7 +11,7 @@ render_with_liquid: false
 
 ---
 
-![Desktop View](/assets/img/Backend/Mybatis/Mybatis/1.png)
+![Desktop View](/assets/img/Backend/Mybatis/Mybatis/1.jpg)
 
 편하긴 하지만 단점이 존재하여 JPA와 같이 쓰면 좋습니다.
 
