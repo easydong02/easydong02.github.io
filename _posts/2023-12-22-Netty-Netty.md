@@ -10,7 +10,7 @@ render_with_liquid: false
 
 ---
 
-![Desktop View](/assets/img/Network/Netty/Netty/1.png)
+![Desktop View](/assets/img/Network/Netty/Netty/1.jpg)
 
  네티는 **자바 네트워크 프레임워크**로서 자바환경에서 네트워크 프로그래밍을 손쉽게 할 수 있게 해주며 **고성능, 고안정성의 프로그램**을 만들 수 있게 해줍니다.
 
