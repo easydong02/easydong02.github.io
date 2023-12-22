@@ -1,5 +1,5 @@
 ---
-title: "[DesignPattern] 마이바티스 원리와 사용법"
+title: "[DesignPattern] 팩토리 패턴"
 date: 2023-12-22 00:00:00 +0900
 categories: [Design-Pattern]
 tags: [designpattern, factorypattern]
