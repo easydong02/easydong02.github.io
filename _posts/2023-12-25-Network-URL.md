@@ -1,7 +1,7 @@
 ---
 title: "[Network] URL과 네트워크 송수신"
 date: 2023-12-25 00:00:00 +0900
-categories: [Network, Network]
+categories: [Network, Study]
 tags: [network, url, message]
 render_with_liquid: false
 ---
