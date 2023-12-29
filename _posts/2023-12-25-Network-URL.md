@@ -6,7 +6,7 @@ tags: [network, url, message]
 render_with_liquid: false
 ---
 
-## Story01
+## 네트워크 송수신
 
 ### 탐험 여행은 URL 입력부터!
 
