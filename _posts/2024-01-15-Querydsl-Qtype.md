@@ -1,7 +1,7 @@
 ---
 title: "[Querydsl] Q-타입(Q-type)"
 date: 2024-01-15 00:00:00 +0900
-categories: [Backend, Spring-Data-JPA]
+categories: [Backend, Querydsl]
 tags: [querydsl, qtype]
 render_with_liquid: false
 future: true
