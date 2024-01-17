@@ -49,7 +49,7 @@ apacheCopy code
 Undertow 서버의 간단한 구성 코드입니다.
 
 ```java
-javaCopy code
+
 public class SimpleUndertowServer {
 
     public static void main(String[] args) {

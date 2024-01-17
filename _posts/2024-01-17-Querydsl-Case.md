@@ -24,7 +24,7 @@ future: true
 ### **간단한 `case` 표현식**
 
 ```java
-javaCopy code
+
 List<String> results = new JPAQueryFactory(entityManager)
     .select(member.age
         .when(10).then("10대")
@@ -40,7 +40,7 @@ List<String> results = new JPAQueryFactory(entityManager)
 ### **복잡한 `case` 표현식**
 
 ```java
-javaCopy code
+
 List<String> results = new JPAQueryFactory(entityManager)
     .select(
         new CaseBuilder()
@@ -65,7 +65,7 @@ List<String> results = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 BooleanBuilder builder = new BooleanBuilder();
 
 // 조건에 따라 동적으로 쿼리 작성

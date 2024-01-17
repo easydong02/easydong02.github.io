@@ -22,7 +22,7 @@ QueryDSL에서는 다양한 **`fetch`** 메서드를 제공하고 있습니다. 
 가장 기본적인 형태의 **`fetch`** 메서드로, 쿼리 결과를 리스트로 반환합니다.
 
 ```java
-javaCopy code
+
 List<Product> products = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .where(product.price.gt(1000))
@@ -35,7 +35,7 @@ List<Product> products = new JPAQueryFactory(entityManager)
 단일 결과를 반환하며, 결과가 없거나 여러 개인 경우 예외를 발생시킵니다.
 
 ```java
-javaCopy code
+
 Product product = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .where(product.id.eq(1L))
@@ -48,7 +48,7 @@ Product product = new JPAQueryFactory(entityManager)
 첫 번째 결과를 반환하며, 결과가 없는 경우 **`null`**을 반환합니다.
 
 ```java
-javaCopy code
+
 Product product = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .where(product.category.eq("Electronics"))
@@ -61,7 +61,7 @@ Product product = new JPAQueryFactory(entityManager)
 결과를 페이징하여 반환하며, 전체 결과 개수도 함께 가져옵니다.
 
 ```java
-javaCopy code
+
 QueryResults<Product> results = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .where(product.price.between(500, 1000))

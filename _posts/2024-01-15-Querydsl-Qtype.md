@@ -26,7 +26,7 @@ QueryDSL은 자바 기반의 오픈소스 SQL 프로젝션 라이브러리로, J
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 @Entity
 public class Product {
     @Id
@@ -45,7 +45,7 @@ public class Product {
 위와 같은 엔티티가 있다면, Q-Type은 다음과 같이 사용할 수 있습니다.
 
 ```java
-javaCopy code
+
 import static com.example.model.QProduct.product;
 
 public class ProductRepository {

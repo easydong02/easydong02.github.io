@@ -23,7 +23,7 @@ render_with_liquid: false
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 import java.io.*;
 
 public class SerializationExample {
@@ -68,7 +68,7 @@ class Person implements Serializable {
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 import java.io.*;
 
 public class DeserializationExample {

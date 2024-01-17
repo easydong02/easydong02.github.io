@@ -26,7 +26,7 @@ future: true
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 QMember subMember = new QMember("subMember");
 
 List<Member> members = new JPAQueryFactory(entityManager)
@@ -49,7 +49,7 @@ List<Member> members = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 QOrder subOrder = new QOrder("subOrder");
 
 List<Order> orders = new JPAQueryFactory(entityManager)
@@ -72,7 +72,7 @@ List<Order> orders = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 QMember subMember = new QMember("subMember");
 
 List<Member> members = new JPAQueryFactory(entityManager)

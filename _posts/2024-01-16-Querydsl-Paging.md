@@ -26,7 +26,7 @@ QueryDSL에서는 **`offset`**과 **`limit`**을 사용하여 페이징을 할 �
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Product> products = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .orderBy(product.price.asc())
@@ -47,7 +47,7 @@ List<Product> products = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 QueryResults<Product> results = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .orderBy(product.price.asc())

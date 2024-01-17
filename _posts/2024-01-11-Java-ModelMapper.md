@@ -35,7 +35,7 @@ render_with_liquid: false
 자, 실제로 **`ModelMapper`**를 어떻게 사용하는지 예시 코드를 통해 알아보겠습니다.
 
 ```java
-javaCopy code
+
 // 의존성 추가 (Maven 기준)
 // pom.xml
 // <dependency>

@@ -22,7 +22,7 @@ Spring Data JPA에서 데이터를 수정하는 과정은 간단합니다. 엔�
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 @Service
 public class ProductService {
 
@@ -61,7 +61,7 @@ Spring Data JPA를 사용하면 간단하게 데이터를 삭제할 수 있습�
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 @Service
 public class ProductService {
 

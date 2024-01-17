@@ -26,7 +26,7 @@ Spring Data JPA에서 페이징은 **`Pageable`** 인터페이스를 통해 설�
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 @Service
 public class ProductService {
 
@@ -54,7 +54,7 @@ public class ProductService {
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 @Service
 public class ProductService {
 
@@ -86,7 +86,7 @@ public class ProductService {
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 public Page<Product> getProductsByPageAndSort(int pageNumber, int pageSize, String sortBy) {
     Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(sortBy));
 

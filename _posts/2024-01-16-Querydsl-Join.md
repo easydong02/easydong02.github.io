@@ -20,7 +20,7 @@ Inner Join은 두 테이블 간에 일치하는 데이터만을 가져옵니다.
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Order> orders = new JPAQueryFactory(entityManager)
     .selectFrom(order)
     .innerJoin(order.customer, customer)
@@ -39,7 +39,7 @@ Left Join은 왼쪽 테이블의 모든 데이터를 가져오고, 오른쪽 테
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Order> orders = new JPAQueryFactory(entityManager)
     .selectFrom(order)
     .leftJoin(order.customer, customer)
@@ -58,7 +58,7 @@ Fetch Join은 연관된 엔티티를 함께 로딩하여 N+1 문제를 해결하
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Order> orders = new JPAQueryFactory(entityManager)
     .selectFrom(order)
     .innerJoin(order.customer, customer).fetchJoin()
@@ -77,7 +77,7 @@ List<Order> orders = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Order> orders = new JPAQueryFactory(entityManager)
     .selectFrom(order)
     .leftJoin(order.customer, customer)

@@ -26,7 +26,7 @@ future: true
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Product> products = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .orderBy(product.price.desc(), product.name.asc())
@@ -45,7 +45,7 @@ List<Product> products = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Product> products = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .fetch()
@@ -66,7 +66,7 @@ List<Product> products = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Product> products = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .orderBy(product.category.asc(), product.price.desc())

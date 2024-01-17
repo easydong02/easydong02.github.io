@@ -22,7 +22,7 @@ future: true
 ---
 
 ```java
-javaCopy code
+
 List<String> memberNames = new JPAQueryFactory(entityManager)
     .select(member.name)
     .from(member)
@@ -37,7 +37,7 @@ List<String> memberNames = new JPAQueryFactory(entityManager)
 ---
 
 ```java
-javaCopy code
+
 List<MemberDto> memberDtos = new JPAQueryFactory(entityManager)
     .select(Projections.bean(MemberDto.class,
         member.name,
@@ -54,7 +54,7 @@ List<MemberDto> memberDtos = new JPAQueryFactory(entityManager)
 ---
 
 ```java
-javaCopy code
+
 List<MemberDto> memberDtos = new JPAQueryFactory(entityManager)
     .select(Projections.constructor(MemberDto.class,
         member.name,
@@ -71,7 +71,7 @@ DTO Projections과 유사하게, 생성자 Projections을 사용하여 DTO 객�
 ---
 
 ```java
-javaCopy code
+
 List<Tuple> tuples = new JPAQueryFactory(entityManager)
     .select(member.name, member.age)
     .from(member)
@@ -86,7 +86,7 @@ Tuple Projections은 여러 필드를 튜플 형태로 가져올 수 있습니�
 ---
 
 ```java
-javaCopy code
+
 List<MemberProjection> projections = new JPAQueryFactory(entityManager)
     .select(Projections.fields(MemberProjection.class,
         member.name.as("username"),

@@ -26,7 +26,7 @@ future: true
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 long productCount = new JPAQueryFactory(entityManager)
     .selectFrom(product)
     .where(product.price.gt(1000))
@@ -45,7 +45,7 @@ long productCount = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 BigDecimal totalAmount = new JPAQueryFactory(entityManager)
     .select(product.amount.sum())
     .from(product)
@@ -64,7 +64,7 @@ BigDecimal totalAmount = new JPAQueryFactory(entityManager)
 ### **예시 코드**
 
 ```java
-javaCopy code
+
 List<Tuple> result = new JPAQueryFactory(entityManager)
     .select(product.category, product.price.avg())
     .from(product)
