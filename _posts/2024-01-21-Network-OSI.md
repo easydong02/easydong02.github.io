@@ -1,8 +1,8 @@
 ---
 title: "[Network] OSI 7계층"
-date: 2023-12-27 00:00:00 +0900
+date: 2024-01-22 00:00:00 +0900
 categories: [Network, Study]
-tags: [network, repeater, hub]
+tags: [network, osi]
 render_with_liquid: false
 ---
 
