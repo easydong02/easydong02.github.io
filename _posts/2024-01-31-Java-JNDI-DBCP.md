@@ -30,7 +30,6 @@ JNDI는 Java 애플리케이션에서 네이밍 서비스에 접근하고 디렉
 ### **JNDI 사용 예시**
 
 ```java
-javaCopy code
 // JNDI로부터 데이터베이스 연결 가져오기
 Context initialContext = new InitialContext();
 DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/myDataSource");
@@ -63,7 +62,6 @@ DBCP는 데이터베이스 연결을 미리 생성해두고 풀(pool)에 저장�
 ### **DBCP 사용 예시**
 
 ```java
-javaCopy code
 // DBCP 설정
 BasicDataSource dataSource = new BasicDataSource();
 dataSource.setDriverClassName("com.mysql.jdbc.Driver");
@@ -92,7 +90,6 @@ try (Connection connection = dataSource.getConnection()) {
 JNDI와 DBCP를 함께 사용하면 JNDI를 통해 데이터베이스 연결 정보를 중앙에서 관리하고, DBCP를 사용하여 효과적으로 데이터베이스 연결을 관리할 수 있습니다.
 
 ```java
-javaCopy code
 // JNDI로부터 데이터베이스 연결 가져오기
 Context initialContext = new InitialContext();
 DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/myDataSource");
