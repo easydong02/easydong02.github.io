@@ -1,6 +1,6 @@
 ---
 title: "[Java] JNDI와 DBCP"
-date: 2024-01-31 14:10:00 +0900
+date: 2024-01-31 00:00:00 +0900
 categories: [Programming-Language, Java]
 tags: [java, jndi, dbcp]
 render_with_liquid: false
