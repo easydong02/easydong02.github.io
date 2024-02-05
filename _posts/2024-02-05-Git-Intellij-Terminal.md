@@ -6,8 +6,6 @@ tags: [git, intellj]
 render_with_liquid: false
 ---
 
-# git 터미널
-
 # 인텔리제이 터미널 - Git bash로 설정해보자
 
 인텔리제이에서 터미널에서 git 관련 명령어를 할 때가 많습니다. 윈도우 기준 기본 설정인 poweshell로 터미널이 되어있는데 이 경우 git stash drop 등 안 먹히는 명령어들이 많았습니다. 그래서 이번엔 인텔리제이에서 터미널 툴을 바꿔보겠습니다.
