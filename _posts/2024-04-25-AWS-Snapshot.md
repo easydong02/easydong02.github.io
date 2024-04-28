@@ -6,8 +6,6 @@ tags: [aws, ebs, snapshot, volume]
 render_with_liquid: false
 ---
 
-# 2주차-4(04.21)-Snapshot
-
 ## ✅ EBS란?
 
 ---
