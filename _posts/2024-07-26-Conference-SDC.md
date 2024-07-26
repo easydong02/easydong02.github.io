@@ -1,5 +1,5 @@
 ---
-title: "SDC(Samsung Dev Conference 2023 참여 후기"
+title: "SDC(Samsung Dev Conference 2023) 참여 후기"
 date: 2024-07-26 00:00:00 +0900
 categories: [Conference]
 tags: [sdc, conference]
