@@ -1,5 +1,5 @@
 ---
-title: "[학습] 클라우드 컴퓨팅의 이해"
+title: "[Cloud] 클라우드 컴퓨팅의 이해"
 date: 2024-10-18 00:00:00 +0900
 categories: [클라우드 인프라 구축 프로젝트]
 tags: [kubernetes, webapp]
