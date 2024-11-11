@@ -1,5 +1,5 @@
 ---
-title: "[Cloud] 로드밸런서(Load Balancer의 이해"
+title: "[Cloud] 로드밸런서(Load Balancer)의 이해"
 date: 2024-11-11 00:00:00 +0900
 categories: [클라우드 인프라 구축 프로젝트]
 tags: [cloud, lb, loadbalancer, alb, nlb]
