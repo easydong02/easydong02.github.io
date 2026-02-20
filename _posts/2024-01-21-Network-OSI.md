@@ -1,7 +1,7 @@
 ---
 title: "[Network] OSI 7계층"
 date: 2024-01-22 00:00:00 +0900
-categories: [Network, Study]
+categories: [Network]
 tags: [network, osi]
 render_with_liquid: false
 ---

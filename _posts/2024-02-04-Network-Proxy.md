@@ -1,7 +1,7 @@
 ---
 title: "[Network] 프록시(Proxy)"
 date: 2024-02-04 00:00:00 +0900
-categories: [Network, Study]
+categories: [Network]
 tags: [network, proxy]
 render_with_liquid: false
 ---

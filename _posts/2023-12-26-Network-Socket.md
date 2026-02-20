@@ -1,7 +1,7 @@
 ---
 title: "[Network] 네트워크 소켓"
 date: 2023-12-26 00:00:00 +0900
-categories: [Network, Study]
+categories: [Network]
 tags: [network, url, message]
 render_with_liquid: false
 ---

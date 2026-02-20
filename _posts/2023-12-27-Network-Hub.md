@@ -1,7 +1,7 @@
 ---
 title: "[Network] 리피터와 허브"
 date: 2023-12-27 00:00:00 +0900
-categories: [Network, Study]
+categories: [Network]
 tags: [network, repeater, hub]
 render_with_liquid: false
 ---

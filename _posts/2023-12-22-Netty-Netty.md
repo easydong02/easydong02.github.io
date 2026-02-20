@@ -1,7 +1,7 @@
 ---
 title: "[Netty] 네티란?"
 date: 2023-12-22 00:00:00 +0900
-categories: [Network, Netty]
+categories: [Network]
 tags: [network, netty, java]
 render_with_liquid: false
 ---
