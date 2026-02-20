@@ -15,7 +15,7 @@ order: 4
 2021.08 ~ 2022.01:  <b>KOREAIT</b> Backend training program
 </pre>
 
-[![Solved.ac Profile](https://mazassumnida.wtf/api/v2/generate_badge?boj=easydong02)](https://solved.ac/easydong02/) ![aws-certified-solutions-architect-associate](https://github.com/easydong02/Devops/assets/82931413/2bf4db7b-ea48-4d03-9583-ce4b5b0e728d) ![cka-certified-kubernetes-administrator](https://github.com/user-attachments/assets/c51d3983-2696-47f5-85fb-d758816078ec)
+[![Solved.ac Profile](https://mazassumnida.wtf/api/v2/generate_badge?boj=easydong02)](https://solved.ac/easydong02/) ![aws-certified-solutions-architect-associate](/_tabs/aws.png) ![cka-certified-kubernetes-administrator](/_tabs/cka.png)
 
 ## Contacts
 [![Tech Blog Badge](https://img.shields.io/badge/-Tech%20blog-black?style=flat-square&logo=github&link=https://easydong02.github.io/)](https://easydong02.github.io/)
