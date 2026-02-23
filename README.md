@@ -1,94 +1,67 @@
 <div align="center">
 
-  # Chirpy Jekyll Theme
+# 👨‍💻 easydong02.github.io
 
-  A minimal, responsive, and feature-rich Jekyll theme for technical writing.
+**Kubernetes · Cloud Native · Infrastructure · Backend**
 
-  [![Gem Version](https://img.shields.io/gem/v/jekyll-theme-chirpy?color=brightgreen)][gem]&nbsp;
-  [![CI](https://github.com/cotes2020/jekyll-theme-chirpy/actions/workflows/ci.yml/badge.svg?branch=master&event=push)][ci]&nbsp;
-  [![Codacy Badge](https://app.codacy.com/project/badge/Grade/4e556876a3c54d5e8f2d2857c4f43894)][codacy]&nbsp;
-  [![GitHub license](https://img.shields.io/github/license/cotes2020/jekyll-theme-chirpy.svg)][license]&nbsp;
-  [![996.icu](https://img.shields.io/badge/link-996.icu-%23FF4D5B.svg)](https://996.icu)
-
-  [**Live Demo →**][demo]
-
-  [![Devices Mockup](https://chirpy-img.netlify.app/commons/devices-mockup.png)][demo]
+[![Blog](https://img.shields.io/badge/Blog-easydong02.github.io-black?style=flat-square&logo=github)](https://easydong02.github.io)
 
 </div>
 
-## Features
+---
 
-<details>
-  <summary>Click to expand/close details</summary>
-  &nbsp;
+## 🗂️ 소개
 
-- Dark / Light Theme Mode
-- Localized UI language
-- Pinned Posts on Home Page
-- Hierarchical Categories
-- Trending Tags
-- Table of Contents
-- Last Modified Date
-- Syntax Highlighting
-- Mathematical Expressions
-- Mermaid Diagrams & Flowcharts
-- Dark / Light Mode Images
-- Embed Videos
-- Disqus / Giscus / Utterances Comments
-- Built-in Search
-- Atom Feeds
-- PWA
-- Google Analytics
-- SEO & Performance Optimization
+클라우드 네이티브 인프라와 백엔드 개발을 다루는 기술 블로그입니다.  
+Kubernetes 운영 경험, 트러블슈팅 노하우, 개발 지식을 기록합니다.
 
-</details>
+> *"배운 것을 기록하고, 기록한 것을 나눈다."*
 
-## Documentation
+---
 
-To learn how to use, develop, and upgrade the project, please refer to the [Wiki][wiki].
+## 📚 카테고리 구조
 
-## Contributing
+```
+📂 Backend                     📂 Infra
+  ├── JPA                        ├── AWS
+  ├── Mybatis                    ├── Docker
+  ├── Querydsl                   ├── Kubernetes
+  ├── Spring                     ├── Security
+  └── Spring-Data-JPA            └── Webserver
 
-Contributions (_pull requests_, _issues_, and _discussions_) are what make the open-source community such an amazing place
-to learn, inspire, and create. Any contributions you make are greatly appreciated.
-For details, see the "[Contributing Guidelines][contribute-guide]".
+📂 Programming-Language        📂 Database
+  ├── Java                       └── SQL
+  ├── Python
+  ├── C                        📂 Frontend
+  └── R                          ├── HTML-CSS-JS
+                                 └── JSP
+📂 Bigdata-AI
+  ├── EDA                      📂 Network
+  ├── Kaggle
+  └── Visualization            📂 Computer-Science
 
-## Credits
+📂 CICD                        📂 Design-Pattern
+  └── Jenkins
+                               📂 OS
+📂 Git                           └── Linux
 
-This project was built primarily with the [Jekyll][jekyllrb] ecosystem,
-[Bootstrap][bootstrap], [Font Awesome][icons], and some other [wonderful tools][lib].
-The avatar and favicon design from [Clipart Max][image].
+📂 Math
+  └── 이산수학
+```
 
-Many thanks to the [contributors][contributors] who participated in the development
-and to the folks who reported bugs or shared ideas.
+---
 
-Last but not least, thanks to [JetBrains][jetbrains] for providing the _Open Source License_.
+## 🛠️ Tech Stack
 
-## Sponsoring
-
-If you like this project or have built something through it, please consider sponsoring it, and your support would be greatly appreciated.
-
-[![Ko-fi](https://img.shields.io/badge/Support_Me_on_Ko--fi-ff5e5b?logo=ko-fi&logoColor=white)][ko-fi]&nbsp;
-[![Wechat Pay](https://img.shields.io/badge/Support_Me_on_WeChat-brightgreen?logo=wechat&logoColor=white)][donation]&nbsp;
-[![Alipay](https://img.shields.io/badge/Support_Me_on_Alipay-blue?logo=alipay&logoColor=white)][donation]
-
-## License
-
-This project is published under [MIT License][license].
-
-[gem]: https://rubygems.org/gems/jekyll-theme-chirpy
-[ci]: https://github.com/cotes2020/jekyll-theme-chirpy/actions/workflows/ci.yml?query=event%3Apush+branch%3Amaster
-[codacy]: https://app.codacy.com/gh/cotes2020/jekyll-theme-chirpy/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
-[license]: https://github.com/cotes2020/jekyll-theme-chirpy/blob/master/LICENSE
-[jekyllrb]: https://jekyllrb.com/
-[bootstrap]: https://getbootstrap.com/
-[icons]: https://fontawesome.com/
-[image]: https://www.clipartmax.com/middle/m2i8b1m2K9Z5m2K9_ant-clipart-childrens-ant-cute/
-[demo]: https://cotes2020.github.io/chirpy-demo/
-[wiki]: https://github.com/cotes2020/jekyll-theme-chirpy/wiki
-[contribute-guide]: https://github.com/cotes2020/jekyll-theme-chirpy/blob/master/docs/CONTRIBUTING.md
-[contributors]: https://github.com/cotes2020/jekyll-theme-chirpy/graphs/contributors
-[lib]: https://github.com/cotes2020/chirpy-static-assets
-[jetbrains]: https://www.jetbrains.com/?from=jekyll-theme-chirpy
-[ko-fi]: https://ko-fi.com/coteschung/
-[donation]: https://sponsor.cotes.page/
+![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat-square&logo=amazonwebservices&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
+![Java](https://img.shields.io/badge/Java-007396?style=flat-square&logo=openjdk&logoColor=white)
+![Spring](https://img.shields.io/badge/Spring-6DB33F?style=flat-square&logo=spring&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white)
+![GitLab](https://img.shields.io/badge/GitLab-FC6D26?style=flat-square&logo=gitlab&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white)
