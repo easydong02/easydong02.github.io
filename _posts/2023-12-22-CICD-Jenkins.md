@@ -1,7 +1,7 @@
 ---
 title: "[Jenkins] 젠킨스 개념과 설치 방법"
 date: 2023-12-22 00:00:00 +0900
-categories: [CICD, Jenkins]
+categories: [CICD]
 tags: [cicd, jenkins]
 render_with_liquid: false
 ---
