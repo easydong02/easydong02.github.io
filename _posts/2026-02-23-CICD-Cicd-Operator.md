@@ -1,7 +1,7 @@
 ---
 title: "[CI/CD] HyperCloud CICD Operator + Tekton Pipeline Controller 완전 정리"
 date: 2026-02-23 00:00:00 +0900
-categories: [CICD]
+categories: [Infra, CICD]
 tags: [kubernetes, hypercloud, cicd, tekton, operator, pipelinerun, integrationconfig, gitlab]
 render_with_liquid: false
 ---

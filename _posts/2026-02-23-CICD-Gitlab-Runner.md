@@ -1,7 +1,7 @@
 ---
 title: "[CI/CD] GitLab Runner 완전 정리: Kubernetes Executor 설정과 동작 원리"
 date: 2026-02-23 00:00:00 +0900
-categories: [CICD]
+categories: [Infra, CICD]
 tags: [gitlab, gitlab-runner, kubernetes, cicd, executor, pipeline, docker, tekton]
 render_with_liquid: false
 ---

@@ -1,7 +1,7 @@
 ---
 title: "[CI/CD] Tekton vs HyperCloud Integration Config 완전 정리"
 date: 2026-02-24 00:00:00 +0900
-categories: [CICD]
+categories: [Infra, CICD]
 tags: [tekton, hypercloud, integration-config, cicd, kubernetes, pipeline, operator, gitlab]
 render_with_liquid: false
 ---
