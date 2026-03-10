@@ -362,4 +362,3 @@ kubectl get pods -n kube-system -l k8s-app=calico-node -w
 ## 참고 자료
 
 - Calico 공식 문서: <https://docs.tigera.io/calico/latest/networking/bgp>
-- 실제 장애 사례: [[2026-02-06] MinIO Calico BGP Peering 장애](/posts/MinIO-Calico-BGP-Peering)
