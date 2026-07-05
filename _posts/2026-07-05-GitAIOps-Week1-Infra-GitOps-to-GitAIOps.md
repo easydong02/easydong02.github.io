@@ -3,6 +3,7 @@ title: "[GitAIOps 스터디 1주차] AI 시대의 인프라, GitOps에서 GitAIO
 date: 2026-07-05 00:00:00 +0900
 categories: [Book, GitAIOps]
 tags: [gitaiops, gitops, kubernetes, claude-code, gke, devops, infra, iac, ai-agent]
+mermaid: true
 render_with_liquid: false
 ---
 
@@ -67,11 +68,11 @@ render_with_liquid: false
 
 ```mermaid
 flowchart TD
-    K["Kubernetes\n(공통 언어)"]
+    K["Kubernetes<br>(공통 언어)"]
     K --> AWS["AWS (EKS)"]
     K --> GCP["GCP (GKE)"]
     K --> AZ["Azure (AKS)"]
-    K --> ON["온프레미스\n하이브리드"]
+    K --> ON["온프레미스<br>하이브리드"]
 
     style K fill:#326CE5,color:#fff,font-weight:bold
 ```
@@ -105,9 +106,9 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Dev["개발자"] -->|1. YAML 수정 & push| Git["Git 저장소\n(Single Source of Truth)"]
-    Git -->|2. 변경 감시| Agent["ArgoCD\n(감시 도구)"]
-    Agent -->|3. 자동 적용| Cluster["Kubernetes\n클러스터"]
+    Dev["개발자"] -->|1. YAML 수정 & push| Git["Git 저장소<br>(Single Source of Truth)"]
+    Git -->|2. 변경 감시| Agent["ArgoCD<br>(감시 도구)"]
+    Agent -->|3. 자동 적용| Cluster["Kubernetes<br>클러스터"]
     Cluster -.->|4. 상태 비교 & 동기화| Agent
 
     style Git fill:#1F6FEB,color:#fff,font-weight:bold
@@ -164,7 +165,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    C["고객사 서비스\n(회원가입·결제·배송 이벤트)"] -->|API 호출| N["Notiflex\nSaaS 플랫폼"]
+    C["고객사 서비스<br>(회원가입·결제·배송 이벤트)"] -->|API 호출| N["Notiflex<br>SaaS 플랫폼"]
     N --> E["📧 이메일"]
     N --> S["💬 SMS"]
     N --> P["🔔 푸시 알림"]
@@ -195,10 +196,10 @@ Notiflex가 스타트업에서 엔터프라이즈로 성장하는 단계가 곧 
 
 ```mermaid
 flowchart TD
-    U["사용자 자연어 지시"] --> M{"CLAUDE.md\n입력 유형 판단"}
-    M -->|"뭐 쓰면 돼?"| D["decision-guides/\n(의사결정 가이드)"]
-    M -->|"설치해줘"| P["prompt-guardrails/\n(실행 가드레일)"]
-    P --> R["result-templates/\n(결과 템플릿)"]
+    U["사용자 자연어 지시"] --> M{"CLAUDE.md<br>입력 유형 판단"}
+    M -->|"뭐 쓰면 돼?"| D["decision-guides/<br>(의사결정 가이드)"]
+    M -->|"설치해줘"| P["prompt-guardrails/<br>(실행 가드레일)"]
+    P --> R["result-templates/<br>(결과 템플릿)"]
     D -.->|선택 후| P
     R --> V["✅ 검증 완료"]
 
@@ -245,8 +246,8 @@ flowchart TD
 ```mermaid
 flowchart LR
     A["GCP 프리티어 가입"] --> B["Claude Code 설치 · 실행"]
-    B --> C["gcloud CLI 설치\n(c.c가 대신 설치)"]
-    C --> D["notiflex-platform\nGitHub 저장소 생성"]
+    B --> C["gcloud CLI 설치<br>(c.c가 대신 설치)"]
+    C --> D["notiflex-platform<br>GitHub 저장소 생성"]
     D --> E["Artifact Registry 생성"]
 
     style B fill:#D97757,color:#fff
@@ -306,9 +307,9 @@ gcloud container clusters create notiflex-cluster \
 
 ```mermaid
 flowchart LR
-    A["1. App 코드 작성\n(Go, main.go)"] --> B["2. Dockerfile 작성\n(멀티스테이지)"]
-    B --> C["3. 빌드 & 푸시\n(Artifact Registry)"]
-    C --> D["4. K8s 매니페스트 작성\n(Deployment·Service)"]
+    A["1. App 코드 작성<br>(Go, main.go)"] --> B["2. Dockerfile 작성<br>(멀티스테이지)"]
+    B --> C["3. 빌드 & 푸시<br>(Artifact Registry)"]
+    C --> D["4. K8s 매니페스트 작성<br>(Deployment·Service)"]
     D --> E["5. 배포 & 동작 확인"]
 
     style A fill:#00ADD8,color:#fff
