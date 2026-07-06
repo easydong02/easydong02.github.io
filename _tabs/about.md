@@ -15,7 +15,7 @@ order: 4
 2021.08 ~ 2022.01:  <b>KOREAIT</b> Backend training program
 </pre>
 
-![aws-certified-solutions-architect-associate](/assets/img/About/aws.png) ![cka-certified-kubernetes-administrator](/assets/img/About/cka.png)
+![aws-certified-solutions-architect-associate](/assets/img/About/aws.png) ![cka-certified-kubernetes-administrator](/assets/img/About/cka.png) ![cka-certified-kubernetes-administrator](/assets/img/About/cks.png)
 
 ## Contacts
 [![Tech Blog Badge](https://img.shields.io/badge/-Tech%20blog-black?style=flat-square&logo=github&link=https://easydong02.github.io/)](https://easydong02.github.io/)
