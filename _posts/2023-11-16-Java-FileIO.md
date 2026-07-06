@@ -7,89 +7,118 @@ render_with_liquid: false
 future: true
 ---
 
-이번 시간에는 저번 시간에 배웠던 파일 입출력이어서 쭉 해보겠습니다. 이번 포스팅은 아주 짧아요!
+## 📌 들어가며
+
+지난 시간에 이어 **파일 입출력(File I/O)**을 다룬다. 이번엔 파일에 텍스트를 쓰고, 특정 줄을 **수정·삭제**하는 방법을 정리한다.
+
+> **핵심 로직**: 파일은 특정 줄만 콕 집어 바꾸기 어렵다. 그래서 **임시 저장소(temp)에 원본을 옮기며 수정/삭제하고, 완성된 temp로 원본을 덮어쓰는** 방식을 쓴다.
 
 ```
+원본 파일 ──읽기(Reader)──► temp(수정/삭제 반영) ──쓰기(Writer)──► 원본 덮어쓰기
+```
+
+---
+
+## 1. 파일에 쓰기 (BufferedWriter)
+
+먼저 `food.txt`에 메뉴를 한 줄씩 쓴다.
+
+```java
 package day20;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
 public class FoodFileTest {
-
-	public static void main(String[] args) throws IOException{		
+    public static void main(String[] args) throws IOException {
         BufferedWriter bw = new BufferedWriter(new FileWriter("food.txt"));
-		bw.write("자장면\n");
-		bw.write("짬뽕\n");
-		bw.write("소고기\n");
-		bw.write("닭고기\n");
-		bw.close();
-     }
+        bw.write("자장면\n");
+        bw.write("짬뽕\n");
+        bw.write("소고기\n");
+        bw.write("닭고기\n");
+        bw.close();
+    }
 }
 ```
 
-먼저 라인마다 텍스트를 집어넜었습니다. 이제 이 자료들을 수정하려고 합니다. 수정이 조금 까다로운데 진행해보겠습니다. 기본 로직은 임시 저장소를 만들고 원래 자료를 넣습니다. 그리고 수정할 데이터는 수정을 하고 넣은 뒤, 그 임시 저장소를 원본에 덮어쓰기를 하는 식으로 진행됩니다.
+---
 
-여기서는 닭고기를 찜닭으로 수정을 해보겠습니다.
+## 2. 수정 — 닭고기 → 찜닭
 
-```
+임시 저장소 `temp`에 원본을 옮기되, 바꿀 줄만 다른 값으로 넣는다.
+
+```java
 BufferedReader br = new BufferedReader(new FileReader("food.txt"));
-		String line = null;
-		String temp = "";
-		while((line = br.readLine()) !=null) {
-			if(line.equals("닭고기")) {
-				temp +="찜닭\n";
-				continue;
-			}
-			temp +=line + "\n";
-		}
-		br.close();
+String line = null;
+String temp = "";                         // 연결(+=)할 것이므로 "" 로 초기화
+while ((line = br.readLine()) != null) {
+    if (line.equals("닭고기")) {
+        temp += "찜닭\n";                  // 바꿀 값을 넣고
+        continue;                          // 원본 "닭고기"는 건너뜀
+    }
+    temp += line + "\n";                   // 나머지는 그대로
+}
+br.close();
 ```
 
-먼저 BufferedReader로 우리가 작성했던 텍스트를 불러옵니다. 그 불러온 것은 line에 넣는데요. 아까 말했던 임시 저장소 temp도 만들어줍시다. 여기에는 대입이 아닌 연결을 할거라 null이 아닌 ""로 초기화를 했습니다. 그리고 while 문은 저번에 배웠던 로직 그대로입니다. 추가 된 것은 if문으로 가져온 line이 "닭고기"문자열이면 temp에 우리가 바꿀 "찜닭\\n"을 넣는거죠. 그리고 그 밑으로 내려가서 닭고기도 temp에 들어가면 안되니까 continue로 다음 반복을 걸었습니다. 그럼이제 닭고기는 찜닭으로 변경되고 나머지는 temp+=line + "\\n"으로 변경없이 들어갑니다.
+여기까지 하면 `temp`에는 수정된 내용이 있지만, **파일은 아직 그대로**다. `temp`로 파일을 덮어써야 한다.
 
-그럼 실행하면 food.txt에는 우리가 수정한 값이 들어가있을까요? 아닙니다. 왜냐하면 우리가 수정한 내용은 그저 임시저장소에 있기 때문이죠. 이것을 다시 덮어써야 합니다.
-
+```java
+BufferedWriter bw2 = new BufferedWriter(new FileWriter("food.txt"));
+bw2.write(temp);
+bw2.close();
 ```
-BufferedWriter bw2= new BufferedWriter(new FileWriter("food.txt"));
-		bw2.write(temp);
-		bw2.close();
-```
-
-이러면 되겠죠? 이제 다시 봅시다
 
 ![Desktop View](/assets/img/Programming-Language/Java/FileIO/1.png)
 
-정상적으로 수정이 된 것을 볼 수 있습니다. 재밌네요 ^^
+정상적으로 수정됐다.
 
-그럼 이제 삭제를 해볼까요? 우리는 저 4개중에 소고기가 맘에 들지 않습니다. 소고기를 삭제하겠습니다.
+---
 
-삭제는 수정보다 더 간단합니다. 이제 틀린그림 찾기를 해봅시다.
+## 3. 삭제 — 소고기 제거
 
-```
+삭제는 수정보다 더 간단하다. **바꿀 값을 넣지 않고 그냥 `continue`**만 하면 그 줄이 temp에서 빠진다.
+
+```java
 BufferedReader br = new BufferedReader(new FileReader("food.txt"));
-		String line = null;
-		String temp = "";
-		while((line = br.readLine()) !=null) {
-			if(line.equals("소고기")) {
-				continue;
-			}
-			temp +=line + "\n";
-		}
-		br.close();
-		
-		BufferedWriter bw2= new BufferedWriter(new FileWriter("food.txt"));
-		bw2.write(temp);
-		bw2.close();
+String line = null;
+String temp = "";
+while ((line = br.readLine()) != null) {
+    if (line.equals("소고기")) {
+        continue;                          // temp에 넣지 않고 건너뜀 = 삭제
+    }
+    temp += line + "\n";
+}
+br.close();
+
+BufferedWriter bw2 = new BufferedWriter(new FileWriter("food.txt"));
+bw2.write(temp);
+bw2.close();
 ```
 
-무엇이 달라졌을까요? 네 맞습니다. 소고기를 찾은뒤 원래는 temp 에 찜닭을 넣었는데 이번에는 그런 거 없이 그냥 continue로 가버렸습니다. 따라서 소고기를 만나면 그 라인을 temp에 넣지 않고 건너뛰는 것이죠.
+| 작업 | 매칭 시 동작 |
+|------|------|
+| **수정** | `temp += "새값\n"; continue;` (바꿀 값 넣고 원본 건너뜀) |
+| **삭제** | `continue;` (아무것도 안 넣고 건너뜀) |
 
 ![Desktop View](/assets/img/Programming-Language/Java/FileIO/2.png)
 
-정상적으로 삭제가 되는것을 볼 수 있습니다.
+정상적으로 삭제됐다.
 
-이로써 2달간의 JAVA공부가 끝났네요.. 그 시간이 어떻게 지나갔는지도 모르게 새로운 세상을 경험했습니다. 앞으로는 국비교육을 받으면서 배웠던 것들과 느낀 점들을 포스팅 해보려고 합니다!! 그동안 봐주셔서 감사합니다 ^~^
+---
+
+## 📝 정리
+
+```
+파일 I/O 수정·삭제 패턴
+├─ 쓰기    BufferedWriter.write()
+├─ 읽기    BufferedReader.readLine()
+├─ 수정    매칭 줄 → 새 값 넣고 continue
+├─ 삭제    매칭 줄 → 그냥 continue (temp에서 제외)
+└─ 마무리  temp를 원본에 덮어쓰기
+```
+
+핵심은 **"임시 저장소에 옮기며 가공한 뒤 덮어쓴다"**는 패턴이다. 이 하나의 로직으로 수정과 삭제를 모두 처리할 수 있다.
+
+이로써 2달간의 자바 공부가 마무리됐다. 새로운 세상을 경험한 시간이었다. 앞으로는 국비교육에서 배운 것들과 느낀 점들을 이어서 포스팅하려 한다. 그동안 봐주셔서 감사합니다!

@@ -6,15 +6,18 @@ tags: [java, override, hashcode, equals]
 render_with_liquid: false
 ---
 
-# **오버라이딩 - hashCode(), equals()**
+## 📌 들어가며
 
-자바에서 객체지향 프로그래밍을 하다보면 **`hashCode()`**와 **`equals()`** 메서드를 오버라이딩(재정의)해야 하는 경우가 있습니다. 이 두 메서드는 객체의 동등성(equality)을 판단하고, 객체를 해시맵(HashMap) 등의 자료구조에 사용할 때 중요한 역할을 합니다. 이번 포스팅에서는 **`hashCode()`**와 **`equals()`** 메서드의 개념을 살펴보고, 어떻게 오버라이딩하는지에 대해 알아보겠습니다.
+`new`로 만든 두 객체는 내용이 같아도 기본적으로 "다른 객체"로 취급된다. 그런데 "이름과 나이가 같으면 같은 사람"처럼 **내용 기반의 동등성**을 정의하고 싶을 때가 있다. 이때 재정의(오버라이딩)해야 하는 것이 **`equals()`**와 **`hashCode()`**다. 특히 `HashMap`, `HashSet` 같은 해시 기반 자료구조에서 이 둘은 반드시 짝으로 다뤄야 한다.
 
-## ✅**hashCode() 메서드**
+> **왜 둘을 함께?**
+> `equals()`로 같다고 판단되는 두 객체는 **반드시 같은 `hashCode()`**를 반환해야 한다. 이 규칙이 깨지면 해시 자료구조에서 값을 못 찾는 버그가 생긴다.
 
 ---
 
-**`hashCode()`** 메서드는 객체의 해시 코드를 반환합니다. 해시 코드는 객체가 해시 테이블에 저장될 때 사용되는 정수 값입니다. 동일한 객체에 대해 여러 번 호출되더라도 일관된 해시 코드를 반환해야 합니다.
+## 1. hashCode() 메소드
+
+**`hashCode()`**는 객체의 해시 코드(정수)를 반환한다. 해시 테이블에 객체를 저장할 때 **어느 버킷에 넣을지**를 결정하는 값이다.
 
 ```java
 @Override
@@ -24,44 +27,48 @@ public int hashCode() {
     result = 31 * result + field2.hashCode();
     return result;
 }
-
 ```
 
-**`hashCode()`**를 오버라이딩할 때 주의할 점은 동일한 객체는 항상 같은 해시 코드를 반환해야 한다는 것입니다. 또한 서로 다른 객체지만 **`equals()`** 메서드로 비교했을 때 동등하다고 판단되는 객체는 동일한 해시 코드를 반환해야 합니다.
+| 규칙 | 설명 |
+|------|------|
+| **일관성** | 같은 객체는 여러 번 호출해도 항상 같은 값 |
+| **equals 일치** | `equals()`가 true인 두 객체는 **같은 해시 코드** 반환 |
 
-## ✅**equals() 메서드**
+> 💡 `31`을 곱하는 것은 관례다. 홀수이면서 소수라 해시 충돌을 줄이는 데 유리하고, `31 * i`가 `(i << 5) - i`로 최적화되기 때문이다.
 
 ---
 
-**`equals()`** 메서드는 두 객체가 동등한지 여부를 판단합니다. 객체의 내용이 같은지를 비교하는 데 사용됩니다.
+## 2. equals() 메소드
+
+**`equals()`**는 두 객체가 **동등한지**를 판단한다. 내용이 같은지를 비교한다.
 
 ```java
 @Override
 public boolean equals(Object obj) {
-    if (this == obj) {
-        return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
+    if (this == obj) return true;                          // 같은 참조면 true
+    if (obj == null || getClass() != obj.getClass())       // null·타입 검사
         return false;
-    }
     MyClass other = (MyClass) obj;
     return Objects.equals(field1, other.field1) &&
            Objects.equals(field2, other.field2);
 }
-
 ```
 
-**`equals()`**를 오버라이딩할 때는 다음을 주의해야 합니다.
+`equals()`를 재정의할 때는 다음 **5가지 규약**을 지켜야 한다.
 
-- 반사성(reflexive): **`x.equals(x)`**는 항상 true를 반환해야 합니다.
-- 대칭성(symmetric): **`x.equals(y)`**가 true이면 **`y.equals(x)`**도 true여야 합니다.
-- 추이성(transitive): **`x.equals(y)`**가 true이고 **`y.equals(z)`**가 true이면 **`x.equals(z)`**도 true여야 합니다.
-- 일관성(consistent): 객체의 상태가 변경되지 않는 한 **`equals()`** 호출 결과는 항상 같아야 합니다.
-- null 검사(null-safe): **`null`**을 인자로 받았을 때는 항상 **`false`**를 반환해야 합니다.
-
-## ✅**오버라이딩 예시**
+| 규약 | 의미 |
+|------|------|
+| **반사성(reflexive)** | `x.equals(x)`는 항상 true |
+| **대칭성(symmetric)** | `x.equals(y)`가 true면 `y.equals(x)`도 true |
+| **추이성(transitive)** | `x=y`, `y=z`면 `x=z`도 성립 |
+| **일관성(consistent)** | 상태가 안 바뀌면 결과도 항상 동일 |
+| **null 안전(null-safe)** | `null` 인자에는 항상 false |
 
 ---
+
+## 3. 오버라이딩 예시
+
+실무에서는 `Objects.hash()`와 `Objects.equals()`를 쓰면 간결하고 안전하다.
 
 ```java
 public class Person {
@@ -72,7 +79,7 @@ public class Person {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, age);
+        return Objects.hash(name, age);        // 여러 필드를 한 번에
     }
 
     @Override
@@ -81,10 +88,29 @@ public class Person {
         if (obj == null || getClass() != obj.getClass()) return false;
         Person person = (Person) obj;
         return age == person.age &&
-                Objects.equals(name, person.name);
+               Objects.equals(name, person.name);
     }
 }
-
 ```
 
-위의 예시에서는 **`hashCode()`**와 **`equals()`**를 문자열 **`name`**과 정수 **`age`** 필드를 기반으로 오버라이딩하고 있습니다.
+위 예시는 `name`과 `age` 필드를 기준으로 두 메소드를 재정의했다. 이제 두 `Person`의 이름·나이가 같으면 **동등한 객체**로 취급되고, `HashMap`의 키로도 올바르게 동작한다.
+
+---
+
+## 📝 정리
+
+```
+equals() / hashCode() 오버라이딩
+├─ hashCode  객체 → 정수(버킷 결정),  Objects.hash(...)
+├─ equals    내용 동등성 판단,        Objects.equals(...)
+├─ 핵심 규칙  equals가 true면 hashCode도 반드시 같아야 함
+└─ equals 규약  반사·대칭·추이·일관·null 안전
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **hashCode()** | 해시 자료구조에서 버킷을 결정하는 정수 |
+| **equals()** | 두 객체의 내용 동등성 판단 |
+| **핵심 계약** | equals가 같으면 hashCode도 같아야 함 |
+
+`equals()`와 `hashCode()`는 **항상 짝으로** 재정의해야 한다. 둘 중 하나만 재정의하면 `HashMap`·`HashSet`에서 예상치 못한 버그가 생기니, `Objects.hash`/`Objects.equals`를 활용해 함께 정의하자.

@@ -5,191 +5,148 @@ categories: [Programming-Language, Java]
 tags: [java]
 ---
 
+## 📌 들어가며
 
-이번 포스팅은 많이 늦었네요 ㅎㅎ; 죄송합니다 다름이 아니라 이번에 부산 여행을 갔다 와서 좀 늦었습니다.
+핸드폰은 2G 폴더폰에서 3G, 4G, 지금의 5G로 발전했다. 세대가 올라갈 때마다 기존 기능은 그대로 두고 새 기능을 얹는다. 만약 새 세대가 나올 때마다 모든 기능을 처음부터 다시 만들라고 하면 개발자들이 퇴사할 것이다. 이 문제를 해결하는 개념이 **상속(inheritance)**이다.
 
-상속에 대해서 알아보겠습니다!
+> **상속이란?**
+> 기존 클래스의 필드를 새 클래스가 **그대로 물려받는 것**. 공통 필드를 부모 클래스에 묶어두고, 자식 클래스가 이어받아 그 위에 특화된 기능을 얹는다.
 
-**상속(inheritance)**
+---
 
-1\. 기존에 선언된 클래스의 필드를 새롭게 만들 클래스의 필드로 그대로 가져오고 싶을 때 사용합니다.
+## 1. 상속 문법
 
-2\. 여러 클래스 선언시 필드가 겹치는 경우, 부모 클래스를 먼저 선언하고 공통 필드를 묶어서 상속해줍니다.
-
-자, 우리가 쓰고 있는 핸드폰을 봅시다. 지금 5G시대죠? 이제 6G개발도 되고있다는 얘기가 있지만.. 처음에 우리가 쓰던 핸드폰은 2G 폴더폰이었습니다. 그리고 3G핸드폰이 개발되고 4G, 그리고 지금의 5G핸드폰을 사용하고있습니다. 그렇다면 상식적으로 핸드폰 세대가 향상 될수록 전에 있던 기능들에 더해 새로운 기능들이 생겨나고 있죠. 그러면 새로운 세대가 나올 때마다 모든 기능을 새로 만들라고 한다면 모든 개발자들이 퇴사하겠죠?
-
-그래서 있는 기능이 상속입니다. 원래 있던 코드들을 그대로 옮겨서 사용하고 그위에 다른 특정한 코드를 얹어서 사용하는거죠. 이것을 상속이라고 합니다.
-
-**상속 문법**
-
-class A{
-
-A필드
-
+```java
+class A {
+    // A 필드
 }
 
-class B extends A{
-
-A, B필드
-
-}
-
-A : 부모 클래스, 상위 클래스, 슈퍼 클래스, 기반 클래스
-
-B : 자식 클래스, 하위 클래스, 서브 클래스, 파생 클래스
-
-문법은 먼저 기존에 있던 부모 A클래스에 있는 A필드가 있고 이것을 상속하려 한다면, 자식 클래스 B를 만들고 그 이름 옆에 extends A라고 적어주시면 B클래스에 A클래스 필드도 고스란히 들어갑니다. 따라서 B클래스에서 지역이 다른 A클래스 코드들을 사용할 수 있다는 뜻이죠.
-
-**super()**
-
-자식 클래스 타입의 객체로 부모 필드에 접근할 수 있습니다.
-
-하지만 자식 생성자만 호출하기 때문에, 자식 필드만 메모리에 할당된다고 생각하지만 사실 자식 생성자에는 항상 부모생성자를 호출하며, 자식 생성자 호출 시 부모와 자식 필드 모두 메모리에 할당됩니다.
-
-이 때 부모 생성자를 부르는 방법은 super()를 사용하는 것입니다.
-
-이제 한번 만들어봅시다!
-
-```
-class A{
-	public A() {
-		System.out.println("부모 생성자 호출"); 
-	}
-	
-	int aData = 100;
-	
-	void printAData() {
-		System.out.println(aData);
-	}
-	
-	void printData() {
-		System.out.println(aData);
-	}
+class B extends A {
+    // A 필드 + B 필드
 }
 ```
 
-class A를 만들어봤습니다. 직접생성자를 선언하고 그 생성자가 사용이 된다면 "부모 생성자 호출"이라는 출력메소드를 넣었습니다.
+부모 클래스 `A`를 자식 클래스 `B`가 `extends A`로 상속하면, **B 안에 A의 필드가 고스란히** 들어간다. 부모·자식은 여러 이름으로 불린다.
 
-그리고 int타입 aData변수를 만들어서 100값을 초기값으로 주었고요. void메소드 2개를 만들고 둘다 변수 aData를 출력하도록 하였습니다.
+| 클래스 | 다른 이름들 |
+|:---:|------|
+| **A (부모)** | 상위 클래스, 슈퍼 클래스, 기반 클래스 |
+| **B (자식)** | 하위 클래스, 서브 클래스, 파생 클래스 |
 
-그 다음엔 자식 클래스를 만들어보겠습니다.
+---
 
-```
-class B extends A{
-	
-	public B() {
-		super();//생략이 가능하고, 생략 시 컴파일러가 자동으로 넣어준다.
-		System.out.println("자식 생성자 호출");
-	}
-	
-	int bData = 10000;
-	
-	int getAData() {
-		return aData;
-	}
-	
-	int getBData() {
-		return bData;
-	}
+## 2. super() — 부모 생성자 호출
+
+> 자식 생성자를 호출하면 자식 필드만 메모리에 올라갈 것 같지만, 사실 **자식 생성자는 항상 부모 생성자를 먼저 호출**한다. 그래서 부모·자식 필드가 **모두** 메모리에 할당된다. 이때 부모 생성자를 부르는 것이 **`super()`**다.
+
+```java
+class A {
+    public A() {
+        System.out.println("부모 생성자 호출");
+    }
+    int aData = 100;
+    void printAData() { System.out.println(aData); }
+    void printData()  { System.out.println(aData); }
 }
-```
 
-A를 상속하는 B클래스를 만들었습니다. 이 역시 직접생성자를 선언했는데요, 먼저 super메소드로 부모 클래스에 접근할 수 있도록 하였습니다. 생략도 가능합니다. 그리고 생성자가 사용이 된다면 "자식 생성자 호출"이라는 문구를 출력하는 메소드도 넣었습니다. 그리고 bData라는 정수타입 변수를 선언하여 10000값을 초기값으로 넣었습니다. 그리고 정수타입 메소드 2개를 넣고 reteurn값은 각각 aData, bData로 했습니다!
+class B extends A {
+    public B() {
+        super();   // 생략 가능 (생략 시 컴파일러가 자동으로 넣어줌)
+        System.out.println("자식 생성자 호출");
+    }
+    int bData = 10000;
+    int getAData() { return aData; }   // 부모 필드 사용 가능
+    int getBData() { return bData; }
+}
 
-이제 메인 클래스를 보겠습니다.
-
-```
 public class InheritanceTest {
-	public static void main(String[] args) {
-		B b = new B();
-		b.printData();
-		System.out.println(b.getAData()); 
-	}
+    public static void main(String[] args) {
+        B b = new B();                    // 자식 생성자만 호출
+        b.printData();                    // 부모 메소드 사용
+        System.out.println(b.getAData()); // 자식 메소드가 부모 변수 반환
+    }
 }
 ```
-
-먼저 메인 클래스에서는 B클래스 생성자만 사용했습니다. 그리고 A클래스에 있는 필드 printData()메소드를 b클래스에서 사용을 했습니다.
-
-그리고 B클래스에서 A클래스에 있는 변수를 리턴하는 메소드를 출력해보았습니다.
 
 ![Desktop View](/assets/img/Programming-Language/Java/Inheritance/1.png)
 
-신기하죠? 자식생성자만 사용했는데도 부모 생성자까지 사용이 되었습니다. 당연히 부모 클래스에 있는 필드들을 사용하기 위해서는 생성자가 사용이 되어야하겠죠? 따라서 부모클래스에 있는 메소드도 사용이 가능하고 자식클래스에 있는 메소드가 부모클래스에 있는 변수를 사용할 수 있었습니다.
-
-이제는 자식클래스에서 부모클래스를 사용하는 방법을 알아봤는데요, 만약 자식클래스에도 부모클래스에 있는 필드와 이름이 같다면, 그리고 그 자식 클래스에서는 그 필드를 사용해야한다면 어떻게 부모클래스에 있는 필드를 무시할 수 있을까요? 그것을 해결하기 위해 오버라이딩을 배워보겠습니다.
-
-**다형성(polymorphism)**
-
-1\. 오버로딩
-
-**2\. 오버라이딩(재정의)**
-
-부모 필드에서 선언한 메소드를 자식 필드에서 수정하고자 할 때 재정의를 해야 합니다.이는 자식에서 부모 필드의 메소드와 동일한 이름으로
-
-선언하는 것입니다. 부모 필드가 메모리에 먼저 할당되고 a라는 메소드가 먼저 올라갑니다. 이 때 자식 필드가 메모리에 할당되면서 재정의한 a라는 메소드가 새롭게 만들어지는 것이 아니라, 기존에 있던 a메소드 저장소에 새롭게 재정의한 소스코드의 주소가 덮어 씌워지게 됩니다. 따라서 자식 객체로 a메소드에 접근하면 자식 필드에서 재정의한 소스코드의 내용이 읽히게 됩니다.
-
-설명은 어려워 보이지만 사실 그렇게 어려운 개념은 아닙니다.
-
 ```
+new B()  ──►  super() 자동 호출  ──►  "부모 생성자 호출"
+                                       "자식 생성자 호출"
+```
+
+자식 생성자만 썼는데 **부모 생성자까지 호출**됐다. 부모 필드를 쓰려면 부모 생성자가 실행되어야 하기 때문이다. 그 결과 자식 객체로 부모 메소드도, 부모 변수도 사용할 수 있다.
+
+---
+
+## 3. 오버라이딩 (재정의)
+
+부모의 메소드가 자식에게 안 어울릴 때, **자식에서 같은 이름으로 다시 정의**하는 것이 오버라이딩이다.
+
+> **동작 원리**: 부모 필드가 먼저 메모리에 올라간다. 자식이 같은 이름의 메소드를 재정의하면, **새로 만드는 게 아니라 기존 메소드 저장소의 주소를 자식 코드로 덮어쓴다.** 그래서 자식 객체로 접근하면 재정의된 내용이 읽힌다.
+
+사실 이건 우리가 아는 대입과 같은 개념이다.
+
+```java
 int a = 100;
-a=200;
+a = 200;   // 이후 a를 출력하면? → 200 (나중 값이 덮어씀)
 ```
 
-이런식으로 정수타입 a를 100으로 초기값을 주어 선언하고 그다음에 대입연산자로 a에 200을 넣는다면, 그다음 a를 출력하면 어떤 값이 나올까요?? 당연히 200이죠. 오버라이딩도 이와 같은 개념입니다. 이름이 같은 두개의 필드가 부모, 자식 클래스에 있다면 나중에 자식 클래스에 있는 필드가 저런 식으로 재정의 되어 사용이 되는겁니다.
+오버라이딩도 마찬가지로, 부모·자식에 같은 이름의 필드가 있으면 **나중의 자식 필드가 사용**된다.
 
-```
-class Car{
-	String brand;
-	String color;
-	int price;
-	
-	public Car() {;}
-
-	public Car(String brand, String color, int price) {
-		super();
-		this.brand = brand;
-		this.color = color;
-		this.price = price;
-	}
-	
-	void engineStart() {
-		System.out.println("열쇠로 시동 켜기");
-	}
-	
-	void engineStop() {
-		System.out.println("열쇠로 시동 끄기");
-	}
+```java
+class Car {
+    String brand, color;
+    int price;
+    public Car() {}
+    public Car(String brand, String color, int price) {
+        super();
+        this.brand = brand; this.color = color; this.price = price;
+    }
+    void engineStart() { System.out.println("열쇠로 시동 켜기"); }
+    void engineStop()  { System.out.println("열쇠로 시동 끄기"); }
 }
 
-class SuperCar extends Car{
-	String mode;
-	
-	@Override
-	void engineStart() {
-	
-		System.out.println("음성으로 시동 킴");
-	}
-	
-	void openRoof() {
-		System.out.println("썬루프 열림");
-	}
-	
-	void closeRoof() {
-		System.out.println("썬루프 닫힘");
-	}
+class SuperCar extends Car {
+    String mode;
+
+    @Override
+    void engineStart() {                        // 부모 메소드 재정의
+        System.out.println("음성으로 시동 킴");
+    }
+    void openRoof()  { System.out.println("썬루프 열림"); }
+    void closeRoof() { System.out.println("썬루프 닫힘"); }
 }
 
 public class Road {
-	public static void main(String[] args) {
-		SuperCar ferrari = new SuperCar();
-		ferrari.engineStart();
-		ferrari.openRoof();
-	}
+    public static void main(String[] args) {
+        SuperCar ferrari = new SuperCar();
+        ferrari.engineStart();   // "음성으로 시동 킴" (재정의된 것)
+        ferrari.openRoof();
+    }
 }
 ```
 
-통으로 가져왔습니다. Car라는 부모 클래스와 SuperCar라는 자식클래스를 만들었는데요, 슈퍼카에서 열쇠를 시동을 켠다는 것은 좀 알어울리겠죠? 그래서 슈퍼카클래스에서는 engineStart를 "음성으로 시동 킴"이라는 문구를 적었습니다. 그런데 engineStart는 부모클래스에도 있죠? 그래서
+슈퍼카가 열쇠로 시동을 켜는 건 어울리지 않으니, `engineStart()`를 "음성으로 시동 킴"으로 재정의했다.
 
-메소드를 입력하기 전에 @Override 를 적었습니다. 뜻은 무시하다입니다. 따라서 이 코드 뒤에 필드가 부모클래스와 이름이 같다면 부모클래스의 필드는 자식 클래스의 필드로 재정의 되어 사용이 됩니다. 이로써 상속을 하여도 강제적으로 전체만 할 수있는 것이 아니라, 선택적으로도 가능하답니다!
+> 💡 **`@Override`**는 "이 메소드는 부모 것을 재정의한다"는 표시다. 상속받되 필요한 메소드만 **선택적으로** 바꿀 수 있다는 게 오버라이딩의 매력이다.
 
-이번시간에는 상속에 대해서 배워보았습니다!
+---
+
+## 📝 정리
+
+```
+상속(inheritance)
+├─ 문법     class 자식 extends 부모  → 부모 필드 물려받음
+├─ super()  자식 생성자는 부모 생성자를 먼저 호출 (생략 가능)
+├─ 재사용   자식 객체로 부모 필드·메소드 사용 가능
+└─ 오버라이딩  @Override로 부모 메소드를 선택적으로 재정의
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **상속** | 부모의 필드를 자식이 물려받는 것 |
+| **super()** | 부모 생성자 호출 (자동 삽입됨) |
+| **오버라이딩** | 부모 메소드를 자식에서 재정의 |
+
+상속은 "공통은 부모에, 특화는 자식에"라는 재사용의 핵심 도구다. `super()`로 부모가 함께 초기화된다는 점, 그리고 `@Override`로 필요한 부분만 바꿀 수 있다는 점을 기억하자.
