@@ -7,83 +7,117 @@ render_with_liquid: false
 future: true
 ---
 
-저번 시간에는 Mysql을 배웠습니다. 이번 시간에는 Oracle database를 사용해보겠습니다~
+## 📌 들어가며
 
-오라클을 설치하고 윈도우 창에 sql이라고 치면 이렇게 sqlplus가 나옵니다!
+저번엔 MySQL을 배웠고, 이번엔 **Oracle**을 사용해본다. 오라클의 **사용자·권한 체계**를 이해하고, 서브쿼리를 활용한 조회 연습문제를 풀어본다.
+
+> 윈도우에서 `sql`을 검색하면 **SQL*Plus**가 나온다.
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/1.png)
 
-실행하겠습니다
+---
 
-![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/2.png)
+## 1. 오라클 사용자·권한 체계
 
-사진 설명을 입력하세요.
+오라클은 계층적인 사용자 구조를 가진다.
 
-제가 사용했던 cmd입니다. 하나씩 뜯어보겠습니다.
+```
+sys (SYSDBA)      ← 최상위 (직접 작업 어려움)
+ └─ system        ← 관리자(간부급)
+      └─ batman   ← 실제 작업할 사용자
+```
 
-![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/3.png)
-
-이것도 mysql처럼 처음에 패스워드에 더해 유저네임까지 입력해야합니다. 처음 우리는 아무것도 없으니까 관리자로 들어가야합니다. 그게 sys(system)입니다. 그럼 패스워드가 뜨는데 아무거나 눌러도 에러가 나옵니다. 에러 내용을 참고하여
+| 사용자 | 역할 |
+|------|------|
+| `sys as sysdba` | 최상위(최고 관리자) |
+| `system` | 관리자, 사용자·권한 관리 |
+| `batman` | 실제 작업 사용자 |
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/4.png)
 
-이렇게 들어갔습니다. sys as sysdba는 이 데이터베이스 세계에서 최상위 포식자라고 생각하시면 됩니다. 이 유저로는 직접 일을 진행하기 어렵습니다. 따라서 그 하위 단계인 system을 또 만들어야합니다.
+### 테이블스페이스와 사용자 생성
 
-![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/5.png)
+MySQL의 database에 해당하는 것이 오라클에선 **테이블스페이스(tablespace)**다.
 
-비번은 초기 설정때 만든 1234로 합니다. 잘 접속이 되었네요. 이제 데이터데이스를 만들어봅시다. 이름은 역시 bigdata로 하겠습니다~
-
-![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/6.png)
-
-이렇게 입력하면 됩니다. 여긴 database가 아닌 tablespace로 합니다 ㅎ 그리고 파일 위치를 오라클이 설치된 파일에서 XE폴더를 찾아 bigdata.dbf로 합니다. 많이 쓰지는 않을거라 용량은 5mb로 했습니다~
-
-이제 bigdata라는 행성이 만들어졌습니다. 이제 이 행성을 사용할 사용자를 또 만들어야합니다. 언제까지 system이라는 간부급이 움직일 수는 없으니 말이죠. DB에서의 국룰 사용자이름 'batman'으로 하겠습니다 ㅎㅎ
+```sql
+-- (system으로) bigdata 테이블스페이스 생성 (XE 폴더에 bigdata.dbf, 5MB)
+-- batman 사용자 생성 (비번 1234, bigdata를 기본, unlimited 권한)
+```
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/7.png)
 
-이름을 정하고 비번도 1234입니다. bigdata를 디폴트로 하고 unlimited, 제한없는 권한을 주었습니다. 유저가 잘 생성되었군요. 이제 이 배트맨으로 bigdata라는 DB에서 여러가지 일을 할겁니다.
+### 권한 부여
 
-그럼 이제 이 배트맨으로 접속을 해봅시다.
+`batman`으로 접속하면 **권한 부족** 에러가 난다. 관리자로 권한을 줘야 한다.
+
+```sql
+connect system/1234
+grant create session, create table to batman;   -- 접속·테이블 생성 권한
+```
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/8.png)
 
-? 권한이 부족하다네요. 생성할 수 있는 권한을 system으로 주어야 할거 같습니다. 지금은 배트맨으로 접속했으니 다시 관리자로 접속해서 배트맨에게 권한을 줘봅시다.
+> 💡 MySQL에서 쓴 명령어가 오라클에서도 똑같이 동작하는 이유: **미국 표준협회(ANSI)**가 DB 명령어를 표준화해두었기 때문이다. 그래서 어떤 DBMS든 기본 명령어는 같다.
 
+---
+
+## 2. spool — 결과 저장
+
+```sql
+-- spool [경로/파일명]  ... 쿼리들 ...  spool off
 ```
-connect system/1234
-grant create session, create table to batman;
-```
-
-이렇게 세션과 테이블을 생성할 수있는 권한을 배트맨에게 줍니다. 그리고 다시 배트맨으로 접속합시다 ^^
-
-이제 테이블을 만들건데 저번에 오라클에서 배포한 자료를 다시 쓰면 됩니다 ㅎㅎ 어떻게 mysql에서 쓴거를 똑같이 오라클에 써도 적용이 될까요?
-
-미국 표준협회(ANSI)에서 데이터베이스 명령어를 다 정해놓았거든요. 그래서 어떤 프로그램을 사용하던지 명령어는 다 같습니다~
-
-![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/9.png)
-
-내용을 담고 전부 select하였습니다. mysql이랑은 조금 레이아웃이 다르군요 ㅎㅎ 재밌습니다
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/10.png)
 
-이렇게 spool을 적고 위치를 지정한 다음 파일이름까지 지정합니다.
+> 💡 `spool`과 `spool off` 사이에 실행한 코드·결과가 **메모장 형식으로 저장**된다.
 
-그리고 나중에 spool off를 하면 그 사이에 있던 코드들이 모두 메모장 형식으로 저장이 됩니다~
+---
 
-몇가지 간단한 문제를 풀어보죠
+## 3. 서브쿼리 연습문제
 
-// BLAKE 보다 급여가 적은 사람들의 이름과 급여를 적었습니다.
+### ① BLAKE보다 급여가 적은 사람
 
-소괄호()안에는 다른 조건을 넣어서 블레이크의 샐러리를 조회 한다음 그것을 다시 비교척도로 사용한 뒤 이름과 급여를 조회하도록 하였습니다.
+```sql
+select ename, sal from emp
+where sal < (select sal from emp where ename = 'BLAKE');
+```
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/11.png)
 
-//SCOTT의 사수보다 급여를 많이 받는 사원들의 이름과 급여를 조회합시다
+> 💡 소괄호 안 **서브쿼리**로 BLAKE의 급여를 조회한 뒤, 그것을 비교 기준으로 삼는다.
+
+### ② SCOTT의 사수보다 급여를 많이 받는 사원
+
+```sql
+select ename, sal from emp
+where sal > (
+    select sal from emp
+    where empno = (select mgr from emp where ename = 'SCOTT')
+);
+```
 
 ![Desktop View](/assets/img/Database/SQL/Practice1-Insert-Create-Select/12.png)
 
-좀 소괄호가 중첩이 많죠?mgr에 써있는 번호가 그 사람의 사수의 사원번호입니다. SCOTT의 mgr를 조회하고 또 그 번호의 사람의 급여를 조회한뒤 비교하였습니다~
+> 💡 서브쿼리를 **중첩**했다. `mgr`은 그 사람의 사수 사원번호다. ① SCOTT의 mgr(사수 번호) 조회 → ② 그 번호의 급여 조회 → ③ 그보다 많이 받는 사원 조회.
 
-재밌습니다 !
+---
 
-이번시간에는 여기까지 하겠습니다!
+## 📝 정리
+
+```
+오라클 연습
+├─ 사용자    sys > system > batman (계층)
+├─ 권한      grant 권한 to 사용자
+├─ 저장소    tablespace (MySQL의 database)
+├─ spool     쿼리·결과를 파일로 저장
+└─ 서브쿼리   (select ...)를 조건으로 중첩 활용
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **sys/system/batman** | 오라클 사용자 계층 |
+| **grant** | 권한 부여 |
+| **tablespace** | 오라클의 데이터 저장 공간 |
+| **서브쿼리** | 쿼리 안의 쿼리 (조건에 활용) |
+
+오라클은 MySQL과 명령어(ANSI 표준)는 같지만 **사용자·권한 체계**가 특징이다. 그리고 **서브쿼리**를 중첩하면 "다른 조회 결과를 기준으로" 원하는 데이터를 정교하게 뽑아낼 수 있다.

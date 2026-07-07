@@ -7,89 +7,83 @@ render_with_liquid: false
 future: true
 ---
 
-# **QueryDSL - 서브쿼리: 데이터베이스를 더 효과적으로 활용하기**
+## 📌 들어가며
 
-안녕하세요! 오늘은 QueryDSL에서 제공하는 서브쿼리에 대해 알아보겠습니다. 서브쿼리는 주 쿼리 안에서 또 다른 쿼리를 실행하는 기술로, 데이터베이스를 더 효과적으로 활용하는 데에 도움을 줍니다. 간단한 설명과 함께 다양한 서브쿼리의 활용 예시 코드를 살펴봅시다.
+이번 글에서는 QueryDSL의 **서브쿼리**를 정리한다.
 
-## ✅**서브쿼리란?**
+> **서브쿼리란?** 하나의 SQL 문 안에서 또 다른 SQL 문을 실행하는 것. 복잡한 조건을 간단하게 처리할 때 쓴다.
 
----
-
-서브쿼리는 하나의 SQL 문 안에서 또 다른 SQL 문을 실행하는 것을 의미합니다. QueryDSL에서는 서브쿼리를 통해 복잡한 조건을 간단하게 처리하고자 할 때 사용됩니다.
-
-## ✅**단일 결과 서브쿼리**
+> 💡 서브쿼리에는 **별칭이 다른 Q-Type**이 필요하다. (`QMember subMember = new QMember("subMember")`)
 
 ---
 
-서브쿼리가 반환하는 결과가 하나인 경우에 사용됩니다.
+## 1. 단일 결과 서브쿼리
 
-### **예시 코드**
+서브쿼리 결과가 **하나**일 때 (예: 최대 나이인 회원).
 
 ```java
-
 QMember subMember = new QMember("subMember");
 
-List<Member> members = new JPAQueryFactory(entityManager)
+List<Member> members = queryFactory
     .selectFrom(member)
-    .where(member.age.eq(
-        new JPASubQuery().select(subMember.age.max()).from(subMember)
+    .where(member.age.eq(                                    // 나이가 = 서브쿼리 결과
+        JPAExpressions.select(subMember.age.max()).from(subMember)
     ))
     .fetch();
-
 ```
 
-위 코드에서는 **`Member`** 테이블에서 **`age`**가 최대인 회원을 찾아와서 해당 나이와 동일한 회원을 찾아옵니다.
+## 2. 다중 결과 서브쿼리
 
-## ✅**다중 결과 서브쿼리**
-
----
-
-서브쿼리가 여러 결과를 반환하는 경우에 사용됩니다.
-
-### **예시 코드**
+서브쿼리가 여러 값을 반환할 때 (예: 평균 이상 주문).
 
 ```java
-
 QOrder subOrder = new QOrder("subOrder");
 
-List<Order> orders = new JPAQueryFactory(entityManager)
+List<Order> orders = queryFactory
     .selectFrom(order)
-    .where(order.orderAmount.gt(
-        new JPASubQuery().select(subOrder.orderAmount.avg()).from(subOrder)
+    .where(order.orderAmount.gt(                             // > 평균
+        JPAExpressions.select(subOrder.orderAmount.avg()).from(subOrder)
     ))
     .fetch();
-
 ```
 
-위 코드에서는 **`Order`** 테이블에서 주문 금액이 평균 이상인 주문을 찾아옵니다.
+## 3. exists 서브쿼리
 
-## ✅**`exists` 서브쿼리**
-
----
-
-**`exists`** 키워드를 사용하여 서브쿼리의 결과의 존재 여부를 확인할 수 있습니다.
-
-### **예시 코드**
+**존재 여부**를 확인할 때.
 
 ```java
-
 QMember subMember = new QMember("subMember");
 
-List<Member> members = new JPAQueryFactory(entityManager)
+List<Member> members = queryFactory
     .selectFrom(member)
-    .where(new JPASubQuery().from(subMember)
+    .where(JPAExpressions.selectFrom(subMember)
         .where(subMember.team.eq(member.team))
-        .exists())
+        .exists())   // 같은 팀 회원이 존재하면
     .fetch();
-
 ```
 
-위 코드에서는 **`Member`** 테이블에서 동일한 팀에 속한 회원이 있는 경우에만 결과를 가져옵니다.
-
-## 📌**주의사항과 팁**
+| 유형 | 용도 |
+|------|------|
+| 단일 결과 | `eq()`로 값 비교 (max 등) |
+| 다중 결과 | `gt()`, `in()` 등 |
+| exists | 존재 여부 (`exists`/`notExists`) |
 
 ---
 
-- 서브쿼리를 사용할 때는 결과가 어떤 형태로 나올지 고려하여 주어진 상황에 맞게 적절한 방식을 선택해야 합니다.
-- 서브쿼리의 결과가 너무 많아질 경우 성능에 영향을 줄 수 있으므로 주의가 필요합니다.
-- 필요에 따라 **`exists`**, **`notExists`** 등을 활용하여 존재 여부를 확인할 수 있습니다.
+## 📝 정리
+
+```
+QueryDSL 서브쿼리
+├─ 준비   별칭 다른 Q-Type (new QMember("sub"))
+├─ 단일   where(...eq(select max...))
+├─ 다중   where(...gt(select avg...))
+└─ exists 존재 여부 확인
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **서브쿼리** | 쿼리 안의 쿼리 |
+| **JPAExpressions** | 서브쿼리 작성 도구 |
+| **exists** | 존재 여부 검사 |
+
+서브쿼리는 복잡한 조건을 하나의 쿼리로 표현하게 해준다. 별칭이 다른 Q-Type이 필요하다는 점, 결과가 많으면 성능에 유의해야 한다는 점을 기억하자.

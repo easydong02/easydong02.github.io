@@ -7,85 +7,81 @@ render_with_liquid: false
 future: true
 ---
 
-# ✅**Spring Data JPA에서 데이터 수정과 삭제: 쉽고 간편하게!**
+## 📌 들어가며
+
+이번 글에서는 Spring Data JPA로 데이터를 **수정(Update)**하고 **삭제(Delete)**하는 방법을 정리한다.
+
+> Spring Data JPA는 ORM으로 DB 조작을 편리하게 해주며, CRUD를 간단히 처리할 수 있다.
 
 ---
 
-안녕하세요! 오늘은 Spring Data JPA에서 데이터를 수정하고 삭제하는 방법에 대해 알아보겠습니다. Spring Data JPA는 객체 관계 매핑(ORM)을 통해 데이터베이스 조작을 편리하게 해주는 도구로, CRUD(Create, Read, Update, Delete) 기능을 간단하게 처리할 수 있습니다.
+## 1. 데이터 수정 (Update)
 
-## ✅**데이터 수정하기**
-
----
-
-Spring Data JPA에서 데이터를 수정하는 과정은 간단합니다. 엔티티를 조회하여 원하는 필드를 수정하고, 이를 저장하면 됩니다.
-
-### **예시 코드**
+수정은 **조회 → 필드 변경 → 저장**의 흐름이다.
 
 ```java
-
 @Service
 public class ProductService {
-
     @Autowired
     private ProductRepository productRepository;
 
-    // 상품 정보 수정
     public Product updateProduct(Long productId, String newProductName) {
-        // 데이터베이스에서 엔티티 조회
-        Optional<Product> optionalProduct = productRepository.findById(productId);
+        Optional<Product> optionalProduct = productRepository.findById(productId);  // 조회
 
-        // 엔티티가 존재하는지 확인 후 수정
         if (optionalProduct.isPresent()) {
             Product product = optionalProduct.get();
-            product.setProductName(newProductName);
-
-            // 수정된 엔티티 저장
-            return productRepository.save(product);
+            product.setProductName(newProductName);          // 필드 수정
+            return productRepository.save(product);          // 저장
         }
-
-        // 수정할 상품이 없는 경우
-        return null;
+        return null;   // 없으면 null
     }
 }
-
 ```
 
-위 코드에서 **`ProductService`** 클래스는 상품 정보를 수정하는 서비스입니다. **`productRepository.findById()`**를 통해 엔티티를 조회하고, 필요한 필드를 수정한 후 **`productRepository.save()`**로 저장합니다.
-
-## ✅**데이터 삭제하기**
+> 💡 사실 `@Transactional` 안에서는 조회한 엔티티의 필드만 바꿔도 **변경 감지(dirty checking)**로 자동 업데이트된다. `save()`는 명시적 저장이다.
 
 ---
 
-Spring Data JPA를 사용하면 간단하게 데이터를 삭제할 수 있습니다. 삭제할 데이터의 ID를 이용하여 삭제하는 메서드를 작성합니다.
-
-### **예시 코드**
+## 2. 데이터 삭제 (Delete)
 
 ```java
-
-@Service
-public class ProductService {
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    // 상품 정보 삭제
-    public void deleteProduct(Long productId) {
-        // 데이터베이스에서 엔티티 조회
-        Optional<Product> optionalProduct = productRepository.findById(productId);
-
-        // 엔티티가 존재하는지 확인 후 삭제
-        optionalProduct.ifPresent(product -> productRepository.delete(product));
-    }
+public void deleteProduct(Long productId) {
+    Optional<Product> optionalProduct = productRepository.findById(productId);
+    optionalProduct.ifPresent(product -> productRepository.delete(product));
 }
-
 ```
 
-여기서 **`productRepository.delete(product)`** 메서드를 호출하면 해당 엔티티가 삭제됩니다. 만약 엔티티가 존재하지 않으면 무시됩니다.
+> 💡 `ifPresent`로 **엔티티가 존재할 때만** 삭제한다. 없으면 조용히 무시된다.
 
-## 📌**주의사항과 팁**
+| 작업 | 메소드 |
+|------|------|
+| 수정 | `findById` → `setXxx` → `save` |
+| 삭제 | `findById` → `delete` |
 
 ---
 
-- **Cascade 설정**: 연관 관계에서 삭제 시 연쇄적으로 삭제하고 싶다면 엔티티 간의 연관 관계에서 **`CascadeType.REMOVE`** 등을 고려해보세요.
-- **Optimistic Locking**: 동시에 여러 사용자가 동일한 데이터를 수정하려는 경우를 대비하여 낙관적 락킹(Optimistic Locking) 등을 사용할 수 있습니다.
-- **삭제 시 참조 무결성**: 삭제 시 연관된 데이터의 무결성을 유지하기 위해 관련된 데이터를 먼저 삭제하거나 적절한 전략을 고려해야 합니다.
+## 📌 주의사항과 팁
+
+| 항목 | 내용 |
+|------|------|
+| **Cascade 설정** | 연관 관계 삭제를 연쇄하려면 `CascadeType.REMOVE` 고려 |
+| **낙관적 락(Optimistic Locking)** | 동시 수정 대비 |
+| **참조 무결성** | 삭제 시 연관 데이터를 먼저 처리 |
+
+---
+
+## 📝 정리
+
+```
+수정 & 삭제
+├─ 수정   조회 → 필드 변경 → save (또는 변경 감지)
+├─ 삭제   조회 → ifPresent → delete
+└─ 주의   Cascade / 낙관적 락 / 참조 무결성
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **변경 감지** | 트랜잭션 내 필드 변경 자동 반영 |
+| **ifPresent** | 존재할 때만 처리 |
+
+수정과 삭제 모두 **먼저 조회한 뒤** 처리하는 것이 안전하다. 특히 연관 관계가 있다면 Cascade와 참조 무결성을 함께 고려해야 예기치 않은 오류를 막을 수 있다.

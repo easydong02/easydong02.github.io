@@ -7,83 +7,71 @@ render_with_liquid: false
 future: true
 ---
 
-# **QueryDSL - Fetch의 종류와 사용법: 데이터 효율적으로 가져오기**
+## 📌 들어가며
 
-안녕하세요! 오늘은 QueryDSL에서 사용되는 **`fetch`** 메서드에 대해 자세히 알아보겠습니다. **`fetch`** 메서드는 쿼리 결과를 가져오는데 있어 여러 가지 옵션을 제공합니다. 어떤 상황에서 어떤 **`fetch`** 메서드를 사용해야 하는지 알아보면서 예시 코드와 함께 살펴보겠습니다.
-
-## ✅**`fetch` 메서드의 종류**
+이번 글에서는 QueryDSL에서 쿼리 결과를 가져오는 **`fetch` 계열 메소드**들을 정리한다. 상황에 맞는 fetch를 골라 쓰는 것이 중요하다.
 
 ---
 
-QueryDSL에서는 다양한 **`fetch`** 메서드를 제공하고 있습니다. 주로 사용되는 **`fetch`** 메서드에 대해 알아보겠습니다.
+## 1. fetch 메소드의 종류
 
-### **1. `fetch()`**
-
-가장 기본적인 형태의 **`fetch`** 메서드로, 쿼리 결과를 리스트로 반환합니다.
-
-```java
-
-List<Product> products = new JPAQueryFactory(entityManager)
-    .selectFrom(product)
-    .where(product.price.gt(1000))
-    .fetch();
-
-```
-
-### **2. `fetchOne()`**
-
-단일 결과를 반환하며, 결과가 없거나 여러 개인 경우 예외를 발생시킵니다.
+| 메소드 | 반환 | 특징 |
+|------|------|------|
+| `fetch()` | `List<T>` | 기본, 여러 결과 |
+| `fetchOne()` | `T` | 단일 결과 (없거나 여럿이면 **예외**) |
+| `fetchFirst()` | `T` | 첫 결과 (없으면 **null**) |
+| `fetchResults()` | `QueryResults<T>` | 결과 + **전체 개수** (페이징) |
 
 ```java
+// fetch() — 리스트
+List<Product> products = queryFactory
+    .selectFrom(product).where(product.price.gt(1000)).fetch();
 
-Product product = new JPAQueryFactory(entityManager)
-    .selectFrom(product)
-    .where(product.id.eq(1L))
-    .fetchOne();
+// fetchOne() — 단일 (0개/2개↑ 시 예외)
+Product one = queryFactory
+    .selectFrom(product).where(product.id.eq(1L)).fetchOne();
 
-```
+// fetchFirst() — 첫 결과 (없으면 null)
+Product first = queryFactory
+    .selectFrom(product).where(product.category.eq("Electronics")).fetchFirst();
 
-### **3. `fetchFirst()`**
-
-첫 번째 결과를 반환하며, 결과가 없는 경우 **`null`**을 반환합니다.
-
-```java
-
-Product product = new JPAQueryFactory(entityManager)
-    .selectFrom(product)
-    .where(product.category.eq("Electronics"))
-    .fetchFirst();
-
-```
-
-### **4. `fetchResults()`**
-
-결과를 페이징하여 반환하며, 전체 결과 개수도 함께 가져옵니다.
-
-```java
-
-QueryResults<Product> results = new JPAQueryFactory(entityManager)
-    .selectFrom(product)
-    .where(product.price.between(500, 1000))
-    .fetchResults();
-
-List<Product> productList = results.getResults();
+// fetchResults() — 결과 + 전체 개수
+QueryResults<Product> results = queryFactory
+    .selectFrom(product).where(product.price.between(500, 1000)).fetchResults();
+List<Product> list = results.getResults();
 long total = results.getTotal();
-
 ```
-
-## ✅**`fetch` 메서드 사용법과 주의사항**
 
 ---
 
-### 📌**사용법**
+## 📌 사용법과 주의사항
 
-- **`fetch`** 메서드는 기본적으로 JPQL 쿼리를 생성하고 실행합니다. 따라서 기존의 JPQL 쿼리와 비슷한 형태로 작성할 수 있습니다.
-- **`fetchOne()`**과 **`fetchFirst()`**는 단일 결과를 반환하므로, 결과가 없거나 여러 개인 경우 주의가 필요합니다.
-- **`fetchResults()`**는 페이징 처리에 유용하게 사용할 수 있습니다.
+| 상황 | 선택 |
+|------|------|
+| 여러 결과 | `fetch()` |
+| 반드시 하나 | `fetchOne()` (예외 주의) |
+| 있을 수도 없을 수도 | `fetchFirst()` |
+| 페이징 (전체 개수 필요) | `fetchResults()` |
 
-### 📌**주의사항**
+> ⚠️ `fetch`는 데이터를 메모리로 로딩하므로 **대량 데이터는 성능을 고려**해야 한다. 연관 엔티티를 함께 로딩하려면 `join`(fetch join)을 활용한다.
 
-- **`fetch`** 메서드는 데이터를 메모리로 전체 로딩하므로, 대량의 데이터를 처리할 때는 성능 고려가 필요합니다.
-- **`fetch`** 메서드는 즉시 로딩을 수행하므로, 연관된 엔티티를 함께 로딩하려면 **`join`**과 같은 기능을 활용해야 합니다.
-- 쿼리 성능을 최적화하려면 **`fetch`** 메서드의 다양한 옵션을 활용하여 필요한 데이터만을 효율적으로 가져오도록 노력해야 합니다.
+---
+
+## 📝 정리
+
+```
+QueryDSL fetch
+├─ fetch()         List 반환
+├─ fetchOne()      단일 (없거나 여럿 → 예외)
+├─ fetchFirst()    첫 결과 (없으면 null)
+└─ fetchResults()  결과 + 전체 개수 (페이징)
+```
+
+| 메소드 | 한 줄 정의 |
+|------|------|
+| **fetch** | 여러 결과 리스트 |
+| **fetchOne** | 정확히 하나 |
+| **fetchFirst** | 첫 결과(없으면 null) |
+| **fetchResults** | 결과+개수 |
+
+fetch 메소드는 "결과가 몇 개인가, 개수가 필요한가"에 따라 골라 쓴다. 특히 `fetchOne()`은 결과가 0개나 2개 이상이면 예외가 나므로, 확실할 때만 사용하자.

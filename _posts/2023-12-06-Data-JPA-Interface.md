@@ -7,88 +7,98 @@ render_with_liquid: false
 future: true
 ---
 
-# 공통인터페이스
+## 📌 들어가며
 
-## JPA VS Data JPA
+이번 글에서는 순수 JPA와 Spring Data JPA의 **Repository 코드 차이**를 비교한다. Spring Data JPA가 얼마나 많은 코드를 줄여주는지 확인해보자.
 
 ---
 
-기존의 JPA에서는 @Repository 어노테이션과 엔티티 매니저를 가져와서 작업을 했다. 하지만 Spring Data Jpa에서는 그냥 JpaRepository인터페이스를 상속받은 인터페이스로 작업이 가능하다.
+## 1. 순수 JPA — 직접 구현
 
-**기존 JPA**
+기존 JPA는 `@Repository`와 `EntityManager`로 CRUD를 **일일이 구현**한다.
 
 ```java
 @Repository
 public class MemberJpaRepository {
-
     @PersistenceContext
     private EntityManager em;
 
-    public Member save(Member member){
-        em.persist(member);
-        return member;
-    }
-
-    public void delete(Member member){
-        em.remove(member);
-    }
-
-    public List<Member> findAll(){
+    public Member save(Member member) { em.persist(member); return member; }
+    public void delete(Member member) { em.remove(member); }
+    public List<Member> findAll() {
         return em.createQuery("select m from Member m", Member.class).getResultList();
     }
-
-    public Optional<Member> findById(Long id){
-        Member member = em.find(Member.class, id);
-        return Optional.ofNullable(member);
+    public Optional<Member> findById(Long id) {
+        return Optional.ofNullable(em.find(Member.class, id));
     }
-
-    public long count(){
-        return em.createQuery("select count(m) from Member m",Long.class).getSingleResult();
-    }
-
-    public Member find(Long id){
-        return em.find(Member.class, id);
+    public long count() {
+        return em.createQuery("select count(m) from Member m", Long.class).getSingleResult();
     }
 }
 ```
 
-**Spring Data Jpa**
+---
+
+## 2. Spring Data JPA — 인터페이스만
 
 ```java
 public interface MemberRepository extends JpaRepository<Member, Long> {
-
 }
 ```
 
-이게 끝이다! 결국 인터페이스 안에 있는 추상 메서드 뿐인데 어떻게 save(), findAll()등이 가능하지?
+> 💡 **이게 끝이다!** 추상 메소드조차 없는데 어떻게 `save()`, `findAll()`이 동작할까? **Spring이 `JpaRepository`를 상속한 인터페이스의 구현체를 자동으로 만들어주기** 때문이다. (프록시로 구현 클래스를 생성해 주입)
 
-→ 이것은 Spring이 JpaRepository를 상속받은 인터페이스는 **자동으로 추상메서드들은 구체화** 시켜주기 때문이다!
+```
+순수 JPA (수십 줄)         Spring Data JPA (1줄)
+@Repository class {        interface extends JpaRepository {
+  save, delete, findAll,       }  ← 구현은 스프링이 자동 생성
+  findById, count ...
+}
+```
 
-테스트 코드로 확인해보자
+| 항목 | 순수 JPA | Spring Data JPA |
+|------|------|------|
+| 구현 | 직접 작성 | **자동 생성** |
+| 코드량 | 수십 줄 | **1줄** |
+| EntityManager | 직접 다룸 | 감춰짐 |
 
-**MemberRepositoryTest**
+---
+
+## 3. 테스트로 확인
 
 ```java
 @SpringBootTest
 @Transactional
 @Rollback(value = false)
 class MemberRepositoryTest {
-
-    @Autowired
-    MemberRepository memberRepository;
-
-    @Autowired
-    TeamRepository teamRepository;
+    @Autowired MemberRepository memberRepository;
 
     @Test
-    public void testMember(){
+    public void testMember() {
         Member member = new Member("memberB");
-        Member savedMember = memberRepository.save(member);
-
+        Member savedMember = memberRepository.save(member);        // 자동 구현된 save
         Member findMember = memberRepository.findById(savedMember.getId()).get();
-
-        assertThat(findMember.getId()).isEqualTo(member.getId());
-        assertThat(findMember.getUsername()).isEqualTo(member.getUsername());
         assertThat(findMember).isEqualTo(member);
     }
+}
 ```
+
+빈 인터페이스만으로 `save`, `findById`가 정상 동작한다.
+
+---
+
+## 📝 정리
+
+```
+JPA vs Spring Data JPA
+├─ 순수 JPA    @Repository + EntityManager로 직접 구현
+├─ Data JPA    JpaRepository 상속만 (스프링이 자동 구현)
+└─ 원리        상속 인터페이스의 구현체를 프록시로 자동 생성
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **JpaRepository** | 공통 CRUD를 제공하는 인터페이스 |
+| **자동 구현** | 스프링이 구현체를 프록시로 생성 |
+
+핵심은 **"Spring Data JPA가 인터페이스 구현체를 자동으로 만들어준다"**는 것이다. 순수 JPA의 반복적인 Repository 코드가 단 한 줄로 사라지는 것이 이 프레임워크의 가장 큰 매력이다.

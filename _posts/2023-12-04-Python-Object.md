@@ -7,116 +7,127 @@ render_with_liquid: false
 future: true
 ---
 
-이번 시간에는 저번에 배웠던 클래스에 이어서 조금 더 해보고 자바에서의 import같은 모듈, 그리고 중요한 예외처리를 알아보겠습니다!
+## 📌 들어가며
 
-클래스는 반복되는 생성과정을 쉽게 편하게 구성합니다. 붕어빵틀.. 이죠!
+이번 글에서는 클래스에 이어 **생성자·상속·클래스 변수**, 자바의 import 같은 **모듈**, 그리고 **예외 처리**를 다룬다.
 
-객체와 인스턴스.. 클래스로 만든 객체(인스턴스)... a = Cookies() a는 객체 Cookie라는 클래스 a는 Cookies의 인스턴스입니다!인스턴스라는 표현은 어떤 객체가 어떤 클래스로 만든 객체인지를 관계위주로 클래스로 설명할때 사용합니다. a는 인스턴스다.. 라는 표현보다는 a는 Cookies의 인스턴스다라는 표현이 더 정확하다고 할 수 있죠. 또는 a는 Cookies의 객체이다라던지!
+> **객체와 인스턴스**: `a = Cookies()`에서 `a`는 **객체**이자 **Cookies의 인스턴스**다. "a는 인스턴스다"보다 **"a는 Cookies의 인스턴스다"**가 더 정확한 표현 — 어떤 클래스로 만든 객체인지 관계를 드러내기 때문이다.
 
-그래서 이번엔 4가지 연산이 들어있는 계산기 클래스를 만들었습니다.
+---
 
-```
+## 1. 생성자와 클래스 (계산기 예제)
+
+파이썬 생성자는 **더블 언더바 `__init__`**으로 정의한다.
+
+```python
 class FourCal():
-  def __init__(self,first,second):
-    self.first = first
-    self.second = second
-
-  def setData(self, first , second): #def 함수 -> 클래스 안에서는 메서드 self는 접근한 인스턴스
-    self.first = first
-    self.second = second
-  def add(self):
-    result = self.first + self.second
-    return result
-  def mul(self):
-    result = self.first * self.second
-    return result
-  
-  def div(self):
-
-      result = self.first/self.second
-      return result
-
-    
-  def sub(self):
-     result = self.first - self.second
-     return result
+    def __init__(self, first, second):   # 생성자
+        self.first = first
+        self.second = second
+    def setData(self, first, second):    # 값 수정
+        self.first = first
+        self.second = second
+    def add(self): return self.first + self.second
+    def mul(self): return self.first * self.second
+    def div(self): return self.first / self.second
+    def sub(self): return self.first - self.second
 ```
 
-파이썬은 생성자 방식이 특이한데요 더블 언더바 (\_\_)를 사용해서 def로 정의를 합니다. 그리고 자바와 마찬가지로 파이썬에서도 생성자에 기본 매개변수를 강제할 수 있습니다. 물론 제가 이 클래스에 setData()라는 메서드를 만들어서 수정할 수 있도록 하였지만 일단 2개의 값을 분명히 필요하므로 바꿀 때는 바꾸더라도 인스턴스를 생성할때부터 self.first와 self.second를 인자를 통해 설정하도록 하였습니다. 그리고 그 밑에 add,mul,div,sub 메서드를 넣어서 각각 들어간 인자들을 어떤 연산을 이용할지 정할 수 있습니다.
-
+```python
+a = FourCal(4, 2)   # 생성 시 first=4, second=2
+b = FourCal(3, 1)
 ```
-a = FourCal(4,2)
-b = FourCal(3,1)
-```
-
-인스턴스 a,b 를 각각 생성자 매개변수에 4,2와 3,1을 넣어준 뒤 클래스 안에 있는 메서드들을 호출해보았습니다.
 
 ![Desktop View](/assets/img/Programming-Language/Python/Object/1.png)
 
-잘 나오네요 ^^
+> 💡 파이썬도 자바처럼 **생성자에 기본 매개변수를 강제**할 수 있다. `setData()`로 수정도 가능하지만, 두 값은 반드시 필요하므로 **생성 시점에 `self.first`, `self.second`를 설정**하도록 했다.
 
-상속도 배웠습니다. 파이썬은 자바보다 상속이 더 편하게 할 수 있습니다. 자바와 같이 기존클래스를 변경하지 않고 기능을 추가하거나 기존 기능을 변경할 때 사용합니다.
+---
 
+## 2. 상속
+
+클래스명 뒤 **소괄호에 부모 클래스**를 넣으면 상속된다. 파이썬은 자바보다 상속이 간편하다.
+
+```python
+class MoreFourCal(FourCal):     # FourCal 상속
+    def pow(self):
+        result = self.first ** self.second   # 제곱 기능 추가
+        return result
 ```
-class MoreFourCal(FourCal):
-  def pow(self):
-    result = self.first ** self.second   # 제곱을 계산하는 기능을 추가..
-    return result
-```
 
-클래스를 하나 더 만들었습니다. 여기서 눈여겨 볼 것은 클래스명 뒤에 소괄호()에 아까만든 FourCal을 넣어주었다는 점, 따라서 상속이 발생합니다. 우리는 여기에 그치지 않고 부모클래스의 속성과 기능도 사용하고 자식에선 더 추가를 하고 싶군요! 그래서 제곱연산을 해주는 메서드도 만들었습니다.
+> 💡 부모(`FourCal`)의 속성·기능을 그대로 쓰면서 자식에서 **기능(제곱)을 추가**했다. 또, **클래스 변수**는 자바의 `static`처럼 인스턴스가 아니라 **클래스 이름으로 호출**한다.
 
-재밌네요 ㅎㅎ
+---
 
-살짝만 다뤄보았지만 클래스변수라는 것도 배웠습니다. 마치 자바에서 static 변수를 사용할 때 인스턴스의 이름을 사용하는게 아니라 클래스이름으로 호출하는 것처럼 같으 맥락이라고 보시면 됩니다!
+## 3. 모듈
 
-**모듈**
+> **모듈**: 함수·변수·클래스를 모아 놓은 파이썬 파일. 다른 프로그램에서 불러와 재사용한다. 자바처럼 **`import`문**을 쓴다. (남이 만든 것도, 내가 만든 것도 사용 가능)
 
-모듈은 함수, 변수, 클래스 등을 모아 놓은 파일입니다. 모듈은 다른 파이썬 프로그램 만들 때 불러와 사용할 수 있게끔 만든 파이썬 파일. 실제로 파이썬 프로그래밍을 할 때 많은 모듈을 사용하게 됩니다.다른 사람이 만든 모듈을 사용할 수도 있고 자신이 만든 모듈을 사용할 수도 있습니다. 문법은 자바와 같이 import문을 사용합니다!
+---
 
-**예외처리**
+## 4. 예외 처리
 
-프로그래밍을 하면서 오류를 피해갈 수 없습니다. 논리적 오류일 수도 있고 외부의 결함이 있을 수도 있죠. 따라서 우리는 미연의 오류를 방지할 문장을 만들줄 알아야 합니다.
+자바의 `try~catch`와 유사하지만 **`except`**를 쓴다.
 
-```
+```python
 try:
-  a=[1,2]
-  print(a[1])
-  4/0
-
-except ZeroDivisionError as e:
-  print('0으로 나누었습니다.')
-
+    a = [1, 2]
+    print(a[1])
+    4 / 0
+except ZeroDivisionError as e:   # 에러 타입 + alias
+    print('0으로 나누었습니다.')
 except IndexError as e:
-  print("인덱스에러")
-
+    print("인덱스에러")
 finally:
-  print('종료합니다.')
+    print('종료합니다.')          # 항상 실행
 ```
 
-자바에서는 try~ catch로 하는데 파이썬은 try는 같지만 except라는 문장을 사용합니다. 그 뒤에는 에러의 이름과 그것을 alias로 우리가 원하는 이름을 지어준 뒤 우리의 입맛에 맞게끔 처리를 할 수 있습니다.그리고 finally는 아시다시피 마지막에 항상 실행되는 구문입니다. 주의할 점은 만약 try의 바디 안에 여러 오류 문장이 있다면 가장 처음 마주한 오류에서 except문으로 넘어가고 finally로 가서 코드가 끝납니다. 따라서 코드를 짤 때 하나하면 또 다른 하나하고.. 이런식으로 효율적인 배치가 필요합니다.
+| 구문 | 역할 |
+|------|------|
+| `try` | 오류 가능성 있는 코드 |
+| `except 에러 as e` | 특정 예외 처리 |
+| `finally` | 항상 실행 |
 
-**예외만들기**
+> ⚠️ `try` 안에 여러 오류가 있으면 **가장 처음 만난 오류**에서 except로 넘어가고 finally로 종료된다. 따라서 코드 배치를 효율적으로 해야 한다.
 
-```
-class MyError(Exception):
-  pass
+### 사용자 정의 예외
 
+```python
+class MyError(Exception):   # Exception 상속
+    pass                    # 내용 없음 (틀만)
 
 def sayNick(nick):
-  if nick == '바보':
-    raise MyError()
-
-  print(nick)
+    if nick == '바보':
+        raise MyError()     # 예외 발생시키기
+    print(nick)
 
 try:
-  sayNick('천사')
-  sayNick('바보')
-  
+    sayNick('천사')
+    sayNick('바보')
 except MyError:
-  print('허용되지 않는 별명입니다')
+    print('허용되지 않는 별명입니다')
 ```
 
-예외를 만들었습니다. MyError라는 클래스를 만들고 모든 예외의 공통부모인 Exception클래스를 상속받았습니다. 그리고 내용엔 pass로 변수로 따지자면 null과 같은 역할입니다. 클래스라는 형식은 갖춰졌지만 내용은 없는.. 그런 역할입니다. 따라서 함수 sayNick을 만들고 매개변수에 '바보'라는 문자열이 입력되었다면 raise명령어로 MyError)를 호출합니다. 따라서 '바보'를 넣으면 에러가 나겠죠? 그래서 try~except문으로 MyError가 난다면 어떻게 처리할지도 설계를 하였습니다~ 정말 재밌네요 ㅎㅎ
+> 💡 모든 예외의 부모인 **`Exception`을 상속**해 커스텀 예외를 만든다. `pass`는 "틀은 갖추되 내용은 없음"을 뜻한다. **`raise`**로 원하는 시점에 예외를 발생시킬 수 있다.
 
-이번 시간에는 여기까지 하겠습니다!
+---
+
+## 📝 정리
+
+```
+객체·모듈·예외
+├─ 생성자   __init__(self, ...) (기본값 강제 가능)
+├─ 상속     class 자식(부모): + 기능 추가
+├─ 모듈     import로 함수·클래스 재사용
+├─ 예외     try / except 에러 as e / finally
+└─ 커스텀   class MyError(Exception) + raise
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **__init__** | 파이썬 생성자 |
+| **인스턴스** | 특정 클래스로 만든 객체 |
+| **except** | 예외를 잡아 처리(자바의 catch) |
+| **raise** | 예외를 발생시킴 |
+
+파이썬의 OOP는 자바와 개념이 같지만 **`__init__` 생성자, `import` 모듈, `try~except` 예외**라는 문법 차이만 익히면 된다. 특히 `raise`로 원하는 예외를 직접 발생시키는 방식이 유용하다.

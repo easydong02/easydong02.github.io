@@ -7,76 +7,94 @@ render_with_liquid: false
 future: true
 ---
 
-이번엔 자동증가 sequence와 정규화 작업에 꼭 필요한 join과 그 축을 담당하는 foreign key에 대해서 알아보겠습니다!
+## 📌 들어가며
 
-**시퀀스(Sequence)**
+이번 글에서는 자동 증가를 담당하는 **시퀀스(Sequence)**, 두 테이블을 잇는 **조인(Join)**, 그 축이 되는 **외래키(Foreign Key)**를 정리한다.
 
-mysql에서는 자동증가옵션이 있었죠? 그런데 오라클엔 없습니다. 그래서 따로 자동적으로 증가하는 sequence를 만들어주어야 하죠.
+---
 
-저번에 만들었던 사용자 batman을 접속하고 시퀀스를 바로 만들 수 있을까요? 아닙니다. 이것도 마찬가지로 관리자에 의해 시퀀스를 만들 수 있는 권한을 받아야 하죠. 문법은 똑같습니다. 관리자인 system으로 접속한 뒤,
+## 1. 시퀀스 (Sequence)
 
+> MySQL에는 `auto_increment`가 있지만 **오라클에는 없다.** 그래서 자동 증가를 위해 **시퀀스**를 따로 만들어야 한다.
+
+먼저 권한이 필요하다. (관리자 `system`으로 접속 후)
+
+```sql
+grant create sequence to batman;   -- batman에게 시퀀스 생성 권한 부여
 ```
-grant create sequence to batman;
-```
 
-이제 다시 배트맨으로 접속하겠습니다. 이제 batman도 시퀀스를 만들 수 있죠.
+이제 `batman`으로 시퀀스를 만든다.
 
-```
+```sql
 create sequence seq
-increment by 1
-start with 1;
+    increment by 1     -- 1씩 증가
+    start with 1;      -- 1부터 시작
 ```
 
-이겁니다. seq라는 이름의 시퀀스를 만들고 increment by1 은 1씩증가입니다. 그리고 start with1은 1부터 시작이죠. 이제 seq는 1부터 시작하여 1씩 증가하는 시퀀스입니다. 이거를 어디다 쓰냐고요? 테이블을 만들 때 넣어주면 됩니다.
+**테이블에서 사용** — `시퀀스.nextval`로 다음 값을 얻는다.
 
-테이블을 하나 만듭시다.
+```sql
+create table family(
+    family_id number primary key,   -- 오라클은 int 대신 number
+    name varchar(25),
+    age number,
+    job varchar(25)
+);
 
-```
- 1  create  table  family(
-  2    family_id  number primary key 
-  3    , name varchar(25)
-  4    , age number 
-  5    , job  varchar(25)
-  6* )
-```
-
-family 라는이름의 테이블이고 family\_id는 number(오라클에선 int 대신 number를 씁니다)타입이고 primary key입니다. 그리고 이름과 나이 job을 적어주었죠. 이제 이 테이블에 하나씩 레코드를 추가할 건데 어떻게 하는지 봅시다.
-
-```
 insert into family(family_id, name, age, job)
- values(seq.nextval,'spiderman',78,'police');
+    values(seq.nextval, 'spiderman', 78, 'police');   -- family_id에 자동 증가값
 ```
 
-insert into family는 다 아실테고, 여기서 중요한건 family\_id에 어떤 값을 넣었나 보죠. number타입이라 원래는 일일이 값을 넣어줘야하지만 이제는 아까만든 seq라는 자동증가 시퀀스가 있습니다. 근데 옆에 .nextval이 있네요? 이건 마지막 순번뒤에 차례대로 하나씩 넣는것입니다. 이 테이블엔 아직 아무 레코드도 없으니 마지막 순번이 0일테니까 1을 넣겠죠? 이런식으로 사용합니다. 사용방법은 다소 복잡하지만 잘 알면 1씩 증가가 아니라 자신만의 방식대로 자동증가 시퀀스를 만들 수 있습니다.
+> 💡 `seq.nextval`은 마지막 순번 뒤에 차례로 값을 넣는다. 레코드가 없으면 마지막이 0이니 **1**이 들어간다. 시퀀스를 잘 활용하면 1씩 증가 외에 나만의 방식으로도 자동 증가를 만들 수 있다.
 
-**join**
+---
 
-join은 두 테이블 을 이어주는 작업입니다. 그리고 foreign key를 축으로 서로 이어주는 것이죠. 이제 오라클 emp와 dept테이블을 봅시다.
+## 2. 조인 (Join)
 
-![Desktop View](/assets/img/Database/SQL/Seq-Join-ForeignKey/1.png)
+> **조인**은 두 테이블을 이어주는 작업이다. **외래키를 축**으로 연결한다.
 
-여기서 우리는 deptno를 중심으로 두 테이블을 연결하고 싶습니다. 일단 두 테이블을 같이 불러볼까요?
+`emp`(직원)와 `dept`(부서)를 그냥 함께 부르면?
 
-```
-select * from emp,dept;
+```sql
+select * from emp, dept;   -- 56 rows! (14 × 4)
 ```
 
 ![Desktop View](/assets/img/Database/SQL/Seq-Join-ForeignKey/2.png)
 
-헐 엄청 많은 것들이 나오네요. 맨 밑에 보시면 56 rows selected.라는게 보이시죠?
+> ⚠️ `emp` 14개 × `dept` 4개 = **56개**가 서로 중복 연결된다(카티션 곱). 우리가 원하는 건 이게 아니다.
 
-알고보면 emp테이블의 14개의 레코드와 dept의 4개의 레코드가 서로 서로 중복연결되어 14\*4가 된 것이죠.
+**deptno가 같은 것끼리만** 연결한다.
 
-그럼 이것을 deptno가 중복되지 않게 하나씩 연결하려면 어떻게 하냐면
-
+```sql
+select * from emp, dept where emp.deptno = dept.deptno;   -- 14 rows
 ```
-select * from emp,dept where emp.deptno=dept.deptno;
-```
-
-입니다 여기서 두 테이블을 이어주는 외부키는 deptno겠죠? 이제 두 테이블의 모든 레코드들을 선택할 때 조건을 겁니다. 두 테이블의 각 레코드의 deptno가 같은 것만 출력하는 것이죠 해볼까요?
 
 ![Desktop View](/assets/img/Database/SQL/Seq-Join-ForeignKey/3.png)
 
-이제 14개 의 레코드로 보이네요 보시면 중간에 deptno를 중심으로 두 테이블이 잘 연결이 된 것을 볼 수 있습니다.
+```
+emp.deptno ─┐
+            ├─ 같은 deptno끼리 짝지음 → 14개 (올바른 조인)
+dept.deptno ┘
+```
 
-이번 시간엔 여기까지 하겠습니다~
+> 💡 두 테이블을 잇는 **외래키가 `deptno`**다. `where`로 "양쪽의 deptno가 같은 것만" 조건을 걸어 올바르게 연결한다.
+
+---
+
+## 📝 정리
+
+```
+시퀀스 · 조인 · 외래키
+├─ 시퀀스   오라클의 자동증가 (create sequence, seq.nextval)
+├─ 조인     두 테이블 연결 (그냥 부르면 카티션 곱!)
+└─ 조건조인  where 테이블A.키 = 테이블B.키
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **시퀀스** | 오라클의 자동 증가 객체 |
+| **nextval** | 시퀀스의 다음 값 |
+| **조인** | 외래키를 축으로 두 테이블 연결 |
+| **카티션 곱** | 조건 없이 조인 시 모든 조합(14×4) |
+
+오라클은 자동 증가를 **시퀀스**로 처리하고, 정규화된 테이블은 **외래키를 축으로 조인**해 다시 합친다. 조인 시 조건(`where`)이 없으면 카티션 곱이 발생한다는 점을 꼭 기억하자.

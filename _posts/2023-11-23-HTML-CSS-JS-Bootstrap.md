@@ -7,111 +7,90 @@ render_with_liquid: false
 future: true
 ---
 
-bootstrap에서는 각종 무료 템플릿을 제공하고 있습니다! 거기서 하나를 정해서 제가 만든 웹페이지를 가꾸어 보겠습니다!
+## 📌 들어가며
 
-![Desktop View](/assets/img/Frontend/HTML-CSS-JS/Bootstrap/1.png)
+이번 글에서는 **Bootstrap**의 무료 템플릿을 가져와 내 웹페이지를 꾸며본다.
 
-bootstrap홈페이지에서 examples를 보시면 여러가지 예시가 있는데요 그중 Navbar static을 가져오겠습니다!
+> **Bootstrap이란?** 미리 만들어진 CSS·JS 컴포넌트(네비게이션 바, 버튼, 그리드 등)를 제공하는 프론트엔드 프레임워크. 복잡한 CSS를 직접 짜지 않고도 세련된 UI를 빠르게 만들 수 있다.
 
-![Desktop View](/assets/img/Frontend/HTML-CSS-JS/Bootstrap/2.png)
+---
 
-![Desktop View](/assets/img/Frontend/HTML-CSS-JS/Bootstrap/3.png)
+## 1. 템플릿 가져오기
 
-페이지를 우클릭하고 페이지 소스 보기를 누르면 오른쪽 처럼 HTML코드가 있습니다. 그대로 가져오면됩니다 ㅎㅎ
+Bootstrap 홈페이지의 **Examples**에서 원하는 예시(여기선 **Navbar static**)를 고른다.
 
 ```
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
-    <meta name="generator" content="Hugo 0.88.1">
-    <title>Top navbar example · Bootstrap v5.1</title>
+Bootstrap Examples → Navbar static 선택
+→ 페이지 우클릭 → 페이지 소스 보기 → HTML 복사
+```
 
-    <link rel="canonical" href="https://getbootstrap.com/docs/5.1/examples/navbar-static/">
+![Desktop View](/assets/img/Frontend/HTML-CSS-JS/Bootstrap/2.png)
+![Desktop View](/assets/img/Frontend/HTML-CSS-JS/Bootstrap/3.png)
 
-    
+> 💡 Bootstrap을 쓰려면 `<head>`에 **Bootstrap CDN 링크**(CSS·JS)를 포함하면 된다.
 
-    <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+```html
+<!-- Bootstrap core CSS -->
+<link rel="stylesheet" href="https://.../bootstrap.min.css">
+<script src="https://.../bootstrap.min.js"></script>
+```
 
-    <!-- Favicons -->
-<link rel="apple-touch-icon" href="/docs/5.1/assets/img/favicons/apple-touch-icon.png" sizes="180x180">
-<link rel="icon" href="/docs/5.1/assets/img/favicons/favicon-32x32.png" sizes="32x32" type="image/png">
-<link rel="icon" href="/docs/5.1/assets/img/favicons/favicon-16x16.png" sizes="16x16" type="image/png">
-<link rel="manifest" href="/docs/5.1/assets/img/favicons/manifest.json">
-<link rel="mask-icon" href="/docs/5.1/assets/img/favicons/safari-pinned-tab.svg" color="#7952b3">
-<link rel="icon" href="/docs/5.1/assets/img/favicons/favicon.ico">
-<meta name="theme-color" content="#7952b3">
+---
 
+## 2. 네비게이션 바 커스터마이징
 
-    <style>
-      .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-      }
+복사한 템플릿에서 **class**만으로 스타일이 적용된다. 브랜드명과 메뉴만 내 내용으로 바꾼다.
 
-      @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-          font-size: 3.5rem;
-        }
-      }
-    </style>
-
-    
-    <!-- Custom styles for this template -->
-    <link href="navbar-top.css" rel="stylesheet">
-  </head>
-  <body>
-    
+```html
 <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
   <div class="container-fluid">
-    <a class="navbar-brand" href="index.html">Easydong02</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarCollapse">
-      <ul class="navbar-nav me-auto mb-2 mb-md-0">
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="about.html">소개</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="project.html">프로젝트</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link disabled">관리자</a>
-        </li>
-      </ul>
-
-    </div>
+    <a class="navbar-brand" href="index.html">Easydong02</a>  <!-- 브랜드명 -->
+    ...
+    <ul class="navbar-nav me-auto mb-2 mb-md-0">
+      <li class="nav-item"><a class="nav-link active" href="about.html">소개</a></li>
+      <li class="nav-item"><a class="nav-link" href="project.html">프로젝트</a></li>
+      <li class="nav-item"><a class="nav-link disabled">관리자</a></li>
+    </ul>
   </div>
 </nav>
 
 <main class="container">
   <div class="bg-light p-5 rounded">
     <h1>프로젝트 목록</h1>
-    <p class="lead">This example is a quick exercise to illustrate how the top-aligned navbar works. As you scroll, this navbar remains in its original position and moves with the rest of the page.</p>
-    <a class="btn btn-lg btn-primary" href="/docs/5.1/components/navbar/" role="button">프로젝트 보기 &raquo;</a>
-   
+    <a class="btn btn-lg btn-primary" href="#" role="button">프로젝트 보기 »</a>
   </div>
 </main>
-
-
-    <script src="/docs/5.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous"></script>
-
-      
-  </body>
-</html>
 ```
 
-이렇게 제가 만든 index.html파일에 복붙했습니다.그리고 수정을 좀 했습니다
+주요 Bootstrap 클래스를 정리하면:
+
+| 클래스 | 역할 |
+|------|------|
+| `navbar navbar-dark bg-dark` | 어두운 네비게이션 바 |
+| `nav-link active` / `disabled` | 활성 / 비활성 링크 |
+| `btn btn-lg btn-primary` | 크고 파란 버튼 |
+| `container` / `p-5` / `rounded` | 컨테이너 / 패딩 / 둥근 모서리 |
 
 ![Desktop View](/assets/img/Frontend/HTML-CSS-JS/Bootstrap/4.png)
 
-메인 이름도 바뀌고 앞으로 여기에 프로젝트를 넣을겁니다. 재밌네요 ~
+브랜드명이 바뀌고, 앞으로 여기에 프로젝트를 넣을 수 있는 골격이 완성됐다.
+
+---
+
+## 📝 정리
+
+```
+Bootstrap
+├─ 목적    미리 만든 컴포넌트로 빠른 UI
+├─ 사용    CDN 링크 포함 + class 지정
+├─ 템플릿  Examples에서 소스 복사 후 커스터마이징
+└─ 클래스  navbar / btn / container 등
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Bootstrap** | 프론트엔드 CSS·JS 프레임워크 |
+| **CDN** | 라이브러리를 링크로 불러오기 |
+| **class 기반** | 클래스만 붙이면 스타일 적용 |
+
+Bootstrap은 "CSS를 직접 짜는 대신 검증된 클래스를 조합"하는 방식이다. 템플릿을 가져와 내용만 바꿔도 그럴듯한 페이지가 완성되니, 빠른 프로토타이핑에 특히 유용하다.

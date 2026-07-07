@@ -6,105 +6,99 @@ tags: [designpattern, singletonpattern]
 render_with_liquid: false
 ---
 
-# **싱글톤 패턴: 객체 지향 프로그래밍의 설계 패턴**
+## 📌 들어가며
 
-싱글톤 패턴은 객체 지향 프로그래밍에서 자주 사용되는 설계 패턴 중 하나입니다. 이 패턴은 특정 클래스의 인스턴스가 오직 하나만 생성되도록 보장하며, 그 인스턴스에 대한 전역적인 접근점을 제공합니다. 이 글에서는 싱글톤 패턴의 개념, 사용법, 예시 코드 등을 다뤄보겠습니다.
+이번 글에서는 객체지향 설계 패턴 중 자주 쓰이는 **싱글턴 패턴(Singleton Pattern)**을 정리한다.
 
-## ✅**싱글톤 패턴의 개념**
+> **싱글턴 패턴이란?**
+> 특정 클래스의 인스턴스가 **오직 하나만** 생성되도록 보장하고, 그 인스턴스에 대한 **전역 접근점**을 제공하는 패턴.
 
----
+| 특징 | 설명 |
+|------|------|
+| **유일한 인스턴스** | 클래스의 인스턴스가 하나만 존재 |
+| **전역 접근성** | 어디서든 그 인스턴스에 접근 |
 
-싱글톤 패턴은 다음과 같은 특징을 갖습니다:
-
-1. **유일한 인스턴스**: 해당 클래스의 인스턴스가 오직 하나만 존재합니다.
-2. **전역적인 접근성**: 어디서든지 해당 인스턴스에 접근할 수 있습니다.
-
-싱글톤 패턴은 보통 다음과 같은 상황에서 사용됩니다:
-
-- 공유된 자원에 대한 접근을 제어할 때
-- 설정 관리자, 로그 레포터, 캐시 관리자 등의 서비스를 제공할 때
-
-## ✅**싱글톤 패턴의 구현 방법**
+> 💡 주로 **공유 자원 접근 제어**, 설정 관리자·로그·캐시 관리자 등에 쓰인다.
 
 ---
 
-싱글톤 패턴은 다양한 방식으로 구현할 수 있지만, 주로 다음 두 가지 방식으로 구현됩니다:
+## 1. 구현 방법 2가지
 
-### **1. 정적 멤버 변수를 이용한 구현**
+### ① 지연 초기화 (Lazy)
 
 ```java
 public class Singleton {
     private static Singleton instance;
-
-    private Singleton() {} // private constructor
+    private Singleton() {}   // private 생성자로 외부 생성 차단
 
     public static Singleton getInstance() {
-        if (instance == null) {
+        if (instance == null) {          // 처음 호출 시 생성
             instance = new Singleton();
         }
         return instance;
     }
 }
-
 ```
 
-### **2. 정적 팩토리 메서드를 이용한 구현**
+### ② 즉시 초기화 (Eager)
 
 ```java
 public class Singleton {
     private static final Singleton instance = new Singleton();
-
-    private Singleton() {} // private constructor
+    private Singleton() {}
 
     public static Singleton getInstance() {
-        return instance;
+        return instance;   // 이미 생성된 것 반환
     }
 }
-
 ```
 
-## ✅**싱글톤 패턴의 예시 코드**
+| 방식 | 생성 시점 | 스레드 안전 |
+|------|:---:|:---:|
+| **Lazy** | 처음 사용 시 | ❌ (동기화 필요) |
+| **Eager** | 클래스 로딩 시 | ✅ |
+
+> 💡 두 방식 모두 **`private` 생성자**로 외부에서 `new`를 못 하게 막고, `getInstance()`로만 인스턴스를 얻게 하는 것이 핵심이다.
 
 ---
 
-### **Java 예시 코드**
-
-```java
-public class Singleton {
-    private static Singleton instance;
-
-    private Singleton() {} // private constructor
-
-    public static Singleton getInstance() {
-        if (instance == null) {
-            instance = new Singleton();
-        }
-        return instance;
-    }
-
-    public void showMessage() {
-        System.out.println("Hello, Singleton!");
-    }
-}
-
-```
-
-### **사용 예시**
+## 2. 사용 예시
 
 ```java
 public class Main {
     public static void main(String[] args) {
-        Singleton singleton = Singleton.getInstance();
-        singleton.showMessage();
+        Singleton singleton = Singleton.getInstance();   // 항상 같은 인스턴스
+        singleton.showMessage();   // Hello, Singleton!
     }
 }
-
 ```
-
-## 📌**싱글톤 패턴의 주의사항**
 
 ---
 
-- 멀티스레드 환경에서 안전하게 사용하기 위해 동기화 처리를 해야 합니다.
-- 리플렉션을 통한 객체 생성을 막아야 합니다.
-- 직렬화와 역직렬화에 대한 보안 문제에 유의해야 합니다.
+## 📌 주의사항
+
+| 항목 | 내용 |
+|------|------|
+| **멀티스레드** | Lazy 방식은 동기화 처리 필요 |
+| **리플렉션** | 리플렉션을 통한 객체 생성을 막아야 함 |
+| **직렬화** | 역직렬화 시 새 인스턴스 생성 방지 |
+
+---
+
+## 📝 정리
+
+```
+싱글턴 패턴
+├─ 목적    인스턴스 하나 + 전역 접근
+├─ 핵심    private 생성자 + getInstance()
+├─ 방식    Lazy(지연, 동기화 필요) / Eager(즉시, 안전)
+└─ 주의    멀티스레드 · 리플렉션 · 직렬화
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **싱글턴** | 인스턴스가 하나뿐인 패턴 |
+| **private 생성자** | 외부 생성 차단 |
+| **Lazy vs Eager** | 지연 생성 vs 즉시 생성 |
+
+싱글턴은 "인스턴스는 단 하나"를 보장하는 패턴이다. `private` 생성자와 `getInstance()`가 핵심이며, 멀티스레드 환경에서는 Eager 방식이나 동기화로 안전성을 확보해야 한다. (스프링의 빈도 기본이 싱글턴이다.)

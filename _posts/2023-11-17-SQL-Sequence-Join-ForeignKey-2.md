@@ -6,48 +6,70 @@ tags: [oracle, sql]
 render_with_liquid: false
 future: true
 ---
-저번 시간에는 emp, dept테이블을 그냥 조건문 where로 연결시켰죠? 이번엔 아예 테이블 2개를 만드는데 foreign key로 두 테이블을 시스템적으로 연결시켜보겠습니다.
 
-저는 subject 테이블과 category 테이블을 만들어서 두개를 이어줄 foreign key를 지정하겠습니다. 그리고 각각 primary key가 있어야 하니까 각각 시퀀스도 만들어줍니다.
+## 📌 들어가며
 
-먼저 우리의 batman으로 접속하죠
+저번엔 `emp`, `dept` 테이블을 그냥 조건문(`where`)으로 연결했다. 이번엔 테이블을 만들 때부터 **외래키(Foreign Key)**로 **시스템적으로 연결**해본다.
+
+> **목표**: `category`(부모)와 `subject`(자식) 테이블을 외래키로 연결. 각 테이블은 primary key를 가진다.
 
 ```
+category (부모)              subject (자식)
+ category_id (PK) ◄──────── category_id (FK)
+ category_name               subject_id (PK)
+                             subject_name, target
+```
+
+---
+
+## 1. 부모 테이블 — category
+
+```sql
 create table category(
-
- category_id number primary key
-
- , category_name varchar(25)
-
- );
+    category_id number primary key,   -- 이 PK를 자식이 참조
+    category_name varchar(25)
+);
 ```
 
-category 테이블입니다. category\_id 를 프라이머리 키로 설정하고 카테고리 이름을 만들었습니다. 그리고 이 카테고리 id를 foreign키로 subject 테이블을 만들 때 사용하려고 합니다.
+---
 
-이제 subject 테이블을 만듭시다.
+## 2. 자식 테이블 — subject (외래키 지정)
 
-```
+```sql
 create table subject(
-
- subject_id number primary key
-
- , category_id number
-
- , subject_name varchar(15)
-
-, target varchar(8)
-
-, constraint fk_category_subject foreign key(category_id) references category(category_id)
-
- );
+    subject_id number primary key,
+    category_id number,
+    subject_name varchar(15),
+    target varchar(8),
+    constraint fk_category_subject
+        foreign key(category_id) references category(category_id)
+);
 ```
 
-서브젝트 테이블엔 먼저 subject\_id라는 프라이머리 키를 설정하고 이제 category\_id 를 설정합니다. 그리고 서브젝트 이름과 타겟이라는 필드를 각각 만들었습니다. 그리고 마지막에 제약조건 처럼
+마지막 줄이 핵심이다. 외래키 선언을 뜯어보면:
+
+| 구성 | 의미 |
+|------|------|
+| `constraint fk_category_subject` | 제약조건 이름 (fk = foreign key) |
+| `foreign key(category_id)` | subject의 `category_id`를 외래키로 |
+| `references category(category_id)` | 부모 `category`의 PK를 참조 |
+
+> 💡 이제 `subject.category_id`에는 **부모 `category`에 존재하는 값만** 넣을 수 있다(참조 무결성). 없는 카테고리를 참조하면 에러가 난다. 이렇게 두 테이블이 **시스템적으로 연결**된다.
+
+---
+
+## 📝 정리
 
 ```
-constraint fk_category_subject foreign key(category_id) references category(category_id)
+외래키로 테이블 연결
+├─ 부모   PK를 가진 테이블 (category)
+├─ 자식   FK로 부모의 PK를 참조 (subject)
+└─ 문법   constraint 이름 foreign key(열) references 부모(PK)
 ```
 
-가 있는데요 fk는 foreign key입니다. 그리고 fk\_category\_subject는 foreign key로 두 테이블을 연결하겠다는 것이죠. 그리고 foreign key는 category\_id이고 이것은 부모테이블이라 부를 수 있는 category의 category\_id를 참조한다는 뜻입니다.!
+| 개념 | 한 줄 정의 |
+|------|------|
+| **외래키(FK)** | 다른 테이블의 PK를 참조하는 컬럼 |
+| **참조 무결성** | 부모에 존재하는 값만 자식에 입력 가능 |
 
-이번 시간은 엄청 짧았네요 ㅎㅎ 여기까지 하도록 하겠습니다!
+지난번의 `where` 조인이 "그때그때 연결"이라면, 외래키는 **테이블 설계 단계에서 관계를 못 박는 것**이다. 참조 무결성 덕분에 잘못된 데이터가 들어오는 것을 원천 차단할 수 있다.

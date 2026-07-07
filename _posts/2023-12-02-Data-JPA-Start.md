@@ -7,126 +7,124 @@ render_with_liquid: false
 future: true
 ---
 
-# Spring data jpa와 사용법
+## 📌 들어가며
 
-## Spring data jpa?
+이번 글에서는 **Spring Data JPA**의 개념과 기본 설정·사용법을 정리한다.
 
----
-
-기존의 JPA를 인터페이스 만으로 조작하여 사용자가 조금더 편하게 jpa를 사용할 수 있도록 만든 것.
-
-기존의 스프링 데이터의 PagingAndSortingRepository를 상속받아 JpaRespository인터페이스를 만들었다.
-
-## 사용방법
+> **Spring Data JPA란?**
+> 기존 JPA를 **인터페이스만으로** 조작하게 해, 더 편하게 쓸 수 있도록 만든 것. 스프링 데이터의 `PagingAndSortingRepository`를 상속해 `JpaRepository` 인터페이스를 제공한다.
 
 ---
 
-### 환경 설정
+## 1. 환경 설정
 
----
+**build.gradle** — 공부용이라 가벼운 H2 DB를 사용한다.
 
-그래들 프로젝트에서 build.gradle 파일에 필요한 의존성들을 추가했다. 공부용으로 만들었으니 무거운 DB보다 가벼운DB(H2)를 사용하였다.
-
-```java
+```gradle
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.h2database:h2'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2'
+    annotationProcessor 'org.projectlombok:lombok'
 }
 ```
 
-여기서 `implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'` 는 코드를 실행할 때 insert문 등에서 입력값이 (?) 로 보이지 않는 것을 실제 들어가는 데이터를 로그단에서 볼 수 있게 해준다.
+> 💡 **p6spy**는 실행 시 insert문 등에서 `?`로 가려지는 **실제 입력값을 로그에서 보이게** 해준다.
 
-그리고 application.yml에서 적절한 환경설정 코드를 삽입한다
+**application.yml:**
 
-```java
+```yaml
 spring:
   datasource:
     url: jdbc:h2:tcp://localhost/~/datajpa
     username: sa
-    password:
     driver-class-name: org.h2.Driver
-
   jpa:
     hibernate:
       ddl-auto: create
     properties:
       hibernate:
-    # show_sql: true
         format_sql: true
-
 logging.level:
   org.hibernate.SQL: debug
 ```
 
-### 코드
-
 ---
 
-이제 간단한 spring data jpa를 사용해보자. 먼저 jpa와 같이 엔티티가 필요하다
+## 2. 코드 — 엔티티 + Repository
 
-**Member.java**
+**Member.java** (엔티티):
 
 ```java
 @Entity
 @Getter
 public class Member {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String username;
 
-    public Member(String username) {
-        this.username = username;
-    }
-
-    public Member() {
-    }
+    public Member(String username) { this.username = username; }
+    public Member() {}
 }
 ```
 
-여기까진 비슷하지만 spring data jpa는 다른점은 이미 만들어진 JpaRespository인터페이스를 사용하는 방법이다.
-
-**MemberRepository.java**
+**MemberRepository.java** — 여기가 핵심이다.
 
 ```java
 public interface MemberRepository extends JpaRepository<Member, Long> {
-
 }
 ```
 
-엥? 아무것도 없는데? 맞다. 필요한 메서드들은 JpaRepository에 있으니 상속만 받고(인터페이스끼리는 extends를 사용) 사용하면 된다.
+> 💡 **내용이 비어 있는데?** 맞다. 필요한 메소드(`save`, `findById` 등)는 이미 `JpaRepository`에 있으므로, **상속만 받으면**(인터페이스끼리는 `extends`) 바로 쓸 수 있다.
 
-**MemberRepositoryTest.java**
+---
+
+## 3. 테스트
 
 ```java
 @SpringBootTest
 @Transactional
-@Rollback(value = false)
+@Rollback(value = false)   // 데이터 삽입을 눈으로 확인
 class MemberRepositoryTest {
-
-    @Autowired
-    MemberRepository memberRepository;
+    @Autowired MemberRepository memberRepository;
 
     @Test
-    public void testMember(){
+    public void testMember() {
         Member member = new Member("memberB");
-        Member savedMember = memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);      // 저장
 
         Member findMember = memberRepository.findById(savedMember.getId()).get();
 
         assertThat(findMember.getId()).isEqualTo(member.getId());
-        assertThat(findMember.getUsername()).isEqualTo(member.getUsername());
         assertThat(findMember).isEqualTo(member);
     }
 }
 ```
 
-@SpringBootTest 어노테이션으로 테스트 파일로써 정의하고 @Transactional 어노테이션을 사용한다. 그리고 @Rollback을 false로 주어서 데이터가 삽입된 것을 눈으로 확인할 수 있도록 한다.
+| 어노테이션 | 역할 |
+|------|------|
+| `@SpringBootTest` | 통합 테스트 |
+| `@Transactional` | 테스트 후 롤백 |
+| `@Rollback(false)` | 롤백 끄기(데이터 확인용) |
 
-여기까지 사용해 보았다. 다음의 공부도 업로드 하겠다.
+---
+
+## 📝 정리
+
+```
+Spring Data JPA 시작
+├─ 개념   JPA를 인터페이스만으로 사용 (JpaRepository)
+├─ 설정   build.gradle + application.yml (H2, p6spy)
+├─ 코드   엔티티 + JpaRepository 상속만
+└─ 테스트  @SpringBootTest + @Transactional
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **JpaRepository** | 기본 CRUD를 제공하는 인터페이스 |
+| **p6spy** | SQL 파라미터를 로그로 확인 |
+| **extends만** | 상속만으로 CRUD 사용 |
+
+Spring Data JPA의 매력은 **"인터페이스를 상속만 하면 CRUD가 끝"**이라는 것이다. 반복적인 Repository 코드를 없애주니, 개발자는 비즈니스 로직에 집중할 수 있다.

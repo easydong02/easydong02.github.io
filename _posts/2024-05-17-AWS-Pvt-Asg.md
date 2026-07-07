@@ -4,214 +4,224 @@ date: 2024-05-17 00:00:00 +0900
 categories: [Infra, AWS]
 tags: [aws, autoscaling, autopolicy, privatesubnet]
 render_with_liquid: false
+mermaid: true
 ---
 
-## ✅Private Subnet?
+## 📌 들어가며
+
+이번 글에서는 **프라이빗 서브넷에 인스턴스를 두고, ALB를 통해서만 접근**하는 아키텍처를 구성한다. 여기에 **동적 크기 조정 정책(Scale Out/In)**을 CloudWatch 경보로 연결해, CPU 부하에 따라 인스턴스가 자동으로 늘고 주는 것까지 실습한다. 앞선 [Auto Scaling](/posts/AWS-Auto-Scaling/)의 심화판이다.
+
+> **왜 프라이빗 서브넷인가?** 실제 서버(EC2)를 **인터넷에서 직접 접근할 수 없는 프라이빗 서브넷**에 숨기고, 외부 트래픽은 **퍼블릭 서브넷의 ALB만** 받게 하면 보안이 크게 강화된다. 사용자는 ALB만 알고, 뒤의 서버는 알 수 없다.
 
 ---
+
+## 1. 전체 아키텍처
+
+사용자 → (Route53) → **퍼블릭 서브넷의 ALB** → **프라이빗 서브넷의 EC2(ASG)** 구조다.
+
+```mermaid
+flowchart TD
+    User(("🌐 사용자"))
+    R53["🧭 Route53"]
+    subgraph VPC
+        subgraph Public["퍼블릭 서브넷"]
+            ALB["⚖️ ALB<br/>(Internet-facing)"]
+        end
+        subgraph Private["프라이빗 서브넷"]
+            E1["💻 asg01"]
+            E2["💻 asg02"]
+        end
+    end
+    CW["📊 CloudWatch<br/>(CPU 경보)"]
+    User --> R53 --> ALB
+    ALB --> E1 & E2
+    CW -. Scale In/Out .-> Private
+```
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled.png)
 
-프라이빗 서브넷을 만들고 거기에 있는 인스턴스를 ALB를 통해서 접근하는 아키텍처를 구성하겠습니다.
-
-## ✅Private Network 아키텍처 구성
-
 ---
 
-### ☑️Private Subnet 생성
+## 2. 프라이빗 서브넷 & 라우팅 테이블
+
+`VPC → 서브넷`에서 4개 AZ에 각각 **프라이빗 서브넷**을 만든다. CIDR은 기존 퍼블릭 서브넷 대역 이후로 이어서 할당한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%201.png)
 
-VPC - 서브넷 탭에서 프라이빗 서브넷을 만들겠습니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%202.png)
-
-4개의 가용 영역에서 각각의 프라이빗 서브넷을 만듭니다. CIDR 블록은 이미 만들어진 퍼블릿 서브넷 이후에 16비트를 더한 수부터 시작해서 만들었습니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%203.png)
 
-생성을하면 이런식으로 서브넷 리스트에서 볼 수 있습니다.
-
-### ☑️Routing Table 생성
+`VPC → 라우팅 테이블`에서 프라이빗용 라우팅 테이블을 만든다. 이 테이블에는 내부 통신용 **로컬 라우팅**만 있고, 앞서 만든 프라이빗 서브넷들을 **연결**한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%204.png)
 
-VPC - 라우팅 테이블 탭에서 프라이빗 서브넷 내에서 라우팅 로직을 참고하는 테이블을 만들겠습니다. 이게 있어야 프라이빗 서브넷에 있는 인스턴스에 접근이 가능합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%205.png)
-
-생성된 라우팅 테이블을 클릭하여 들어가면 내부 통신을 위한 기본 로컬 라우팅이 존재합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%206.png)
 
-여기에 연결 없는 서브넷 리스트 탭에서 아까만든 서브넷들이 보입니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%207.png)
 
-검색 후 연결을 합니다.
+> ⚠️ 프라이빗 라우팅 테이블에는 **인터넷 게이트웨이(IGW) 경로가 없다.** 그래서 프라이빗 서브넷의 인스턴스는 외부에서 직접 접근할 수 없고, 오직 로컬 통신(같은 VPC 안)만 가능하다.
 
-### ☑️시작 템플릿 생성
+---
+
+## 3. AMI & 시작 템플릿
+
+EC2를 이미지화(AMI)한다. 이미지 생성 시 **'재부팅 안 함'** 옵션을 체크한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%208.png)
 
-EC2탭에서 대상 인스턴스 이미지화를 합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%209.png)
-
-이미지를 생서합니다. ‘재부팅 안함’ 옵션은 체크해줍니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2010.png)
 
-EC2- AMI 탭에가면 만들어진 AMI가 보입니다.
+시작 템플릿을 만들 때 **Auto Scaling 지침 옵션**을 체크한다(그래야 AMI 선택이 필수가 된다). 내 AMI를 선택하고, **네트워크는 나중에 설정해야 하므로 '포함하지 않음'**으로 둔다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2011.png)
 
-EC2 - 시작 템플릿 탭에서 Auto Scaling의 기준이 되는 템플릿을 만듭니다. 여기서는 Auto Scaling 지침 옵션을 체크합니다. 그래야 아래에서 AMI 를 선택하는 것이 필수가 됩니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2012.png)
-
-내 AMI 탭으로 가서 아까 만든 AMI를 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2013.png)
 
-네트워크는 나중에 설정해야해서 - 포함하지 않음을 선택합니다.
+---
 
-### ☑️Auto Scaling 그룹 생성
+## 4. Auto Scaling 그룹 생성 (핵심 함정)
+
+ASG 생성에서 시작 템플릿을 고른다. **네트워크 매핑이 핵심 함정**인데, 프라이빗 서브넷을 만들었다고 프라이빗을 고르는 게 아니라 **퍼블릭 서브넷을 선택**해야 한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2014.png)
 
-EC2 - Auto Scaling에서 Auto Scaling 그룹 생성을 하면 시작템플릿을 골라야합니다. 아까 만든 템플릿을 선택합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2015.png)
 
-네트워크 매핑에서 중요한건 pvt 만들었다고 pvt 선택을 하는것이 아니라 , 퍼블릭 서브넷을 선택해야 합니다.
+> ⚠️ **왜 퍼블릭 서브넷을 고르나?** 여기서 지정하는 서브넷은 **ALB가 배치될 위치**다. 외부 트래픽을 받는 ALB는 반드시 퍼블릭 서브넷에 있어야 하므로, 프라이빗 아키텍처라도 이 단계에서는 **퍼블릭 서브넷**을 선택한다.
+
+로드밸런서는 **ALB(Internet-facing)**, 리스너의 대상 그룹은 새로 만들고, 상태 확인을 체크한다(나중에 CloudWatch로 볼 것이다).
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2016.png)
 
-로드 밸런서는 ALB로 합니다. Internet-facing = 인터넷 경계
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2017.png)
-
-리스너에서는 대상그룹이 필요한데 새로 만들겠습니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2018.png)
 
-상태확인을 체크합니다. 나중에 CloudWatch로 확인할거거든요!
+그룹 크기는 **최소 2 / 최대 4**로 하고, 크기 조정 정책은 나중에 세팅한다. 알림은 기존 SNS 주제로, 태그는 `Name=asg`로 통일한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2019.png)
 
-그룹 크기를 정합니다. 최소2 최대4로 하겠습니다. 크기 조정 정책은 나중에 세팅하겠습니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2020.png)
-
-알림 설정을 합니다 옛날에 만든 SNS 주제를 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2021.png)
 
-태그 설정하여 Auto Scaling할 때 생성되는 인스턴스 이름 asg로 통일합니다.
+---
 
-### ☑️Route 53 설정
+## 5. Route53 & HTTPS 설정
+
+Route53에서 ALB 별칭 레코드를 만든다. 그리고 `EC2 → 로드 밸런서`에서 만든 ALB의 리스너에 **HTTPS를 추가**하고, ASG 대상 그룹으로 전달하도록 한 뒤 **ACM 인증서**를 선택한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2022.png)
 
-Route 53 탭에서 ALB 레코드 생성을 합니다.
-
-### ☑️HTTPS 설정
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2023.png)
-
-EC2 - 로드 밸런서 - 만들어진 ALB를 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2024.png)
 
-리스너에 https 추가를 하고 Auto Scaling할 때 생성했던 대상그룹으로 전달을 합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2025.png)
 
-그리고 ACM에서 요청했던 인증서를 선택합니다.
+---
 
-### ☑️Auto Scale Out 단순 크기 조정 정책 설정
+## 6. Scale Out 정책 (CPU 70% 초과 → +1)
+
+`my-asg`로 이동하면 아직 정책이 없다. **동적 크기 조정 정책**을 만드는데, 먼저 **확장(Scale Out)**부터. 유형은 **단순 크기 조정**이다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2026.png)
 
-Auto Scaling 그룹에서 만들었던 my-asg로 이동합니다. 아직은 정책이 없는게 보입니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2027.png)
 
-동적 크기 조정 정책 생성합니다. 먼저 확장하는 정책(Scale out)부터 하겠습니다. 유형은 단순 크기로 하겠습니다.
+**CloudWatch 경보 생성**으로 이동해 지표를 `EC2 → Auto Scaling 그룹별 → CPUUtilization`으로 선택한다. 조건은 **CPU 사용률 70% 초과 시 경보**, 트리거는 `my-sns` 주제로 설정한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2028.png)
 
-CloudWatch 경보생성 눌러서 새로운 생성 페이지로 갑니다. 지표선택 누르고 EC2 - Auto Scaling 그룹별 - CPUUtilization을 선택합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2029.png)
-
-화면처럼 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2030.png)
 
-그러면 현재 cpu그래프가 보입니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2031.png)
 
-조건탭에서 cpu 사용률이 70%가 넘어가면 경보를 울리게 합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2032.png)
-
-알람이 울렸을 때 작동할 작업 트리거를 설정하겠습니다. 만들어 놓은 my-sns주제를 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2033.png)
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2034.png)
 
-여기까지 하면 아까 CloudWatch 생성이 되는겁니다.
+동적 크기 조정으로 돌아와 생성한 경보를 선택하고, 작업은 **'추가' 1개**로 한다. 이제 CPU가 70%를 넘으면 인스턴스가 하나 추가된다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2035.png)
 
-그럼 다시 동적 크기 조정으로 돌아와서 아까 생성한 cloudwatch 경보를 선택합니다. 그리고 작업 수행은 ‘추가’로 하고 1개로 합니다. 이러면 cloudwatch가 scaleout 알람을 울렸을 때 인스턴스를 하나 추가하게 됩니다.
+---
 
-### ☑️Auto Scale In 단계 크기 조정 정책 설정
+## 7. Scale In 정책 (CPU 30% 미만 → −1)
+
+이번엔 축소(Scale In)다. 같은 방식으로 CloudWatch 경보를 만들되, 조건을 **CPU 30% 미만**으로 한다. 트리거는 `my-sns`, 작업은 **인스턴스 1개 제거**다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2036.png)
 
-이제는 scale in을 해보겠습니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2037.png)
-
-아까랑 똑같이 cloudwatch 경보를 생성합니다. 마찬가지로 cpu util쪽으로 가서 지표를 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2038.png)
 
-조건은 30%보다 작을때로 하겠습니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2039.png)
-
-마찬가지로 my-sns 주제를 선택합니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2040.png)
 
-이 경보의 이름을 정합니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2041.png)
 
-그런 다음 이 경보가 울렸을 때의 작업 트리거를 설정합니다. cpu가 30보다 작아졌을 때 인스턴스를 하나 제거하기로 하겠습니다.
+이제 `my-asg`에 **동적 크기 조정 정책이 2개**(Out/In) 존재한다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2042.png)
 
-이제 auto scaling그룹에 my-asg그룹에는 동적 크기 조정 정책이 2개가 있는것을 확인할 수 있습니다.
+| 정책 | 조건 | 작업 |
+|------|------|------|
+| **Scale Out** | CPU > 70% | 인스턴스 **+1** |
+| **Scale In** | CPU < 30% | 인스턴스 **−1** |
 
-### ☑️트래픽 부하 주기
+---
+
+## 8. 트래픽 부하 테스트
+
+최소 용량이 2라서 인스턴스가 2개 있다. `asg01`, `asg02`로 구분하고, 각 인스턴스에서 부하 명령을 준다.
+
+```bash
+yes > /dev/null &   # CPU를 최대로 점유(무한 출력)
+```
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2043.png)
 
-auto scaling 그룹 최소 ec2 용량 개수가 2라서 2개가 있습니다. 각각 구분할 수 있도록 asg01, asg02로 하겠습니다.
-
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2044.png)
-
-각 인스턴스마다 `**yes > /dev/null &`\*\* 명령어를 입력하여 인스턴스 에 최대 부하를 주겠습니다.
 
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2045.png)
 
+Scale Out 경보를 보면 **임계치(70%)를 넘겨 새 인스턴스가 자동 생성**된 것을 확인할 수 있다.
+
 ![Untitled](/assets/img/Infra/AWS/private/Untitled%2046.png)
 
-이제 아까 만든 scaleout 경보를 가면 임계치를 넘어갔고 따라서 새로운 인스턴스가 생성된 것을 확인 할 수 있습니다.
+> 💡 `yes > /dev/null &`는 `yes`의 무한 출력을 버림으로 보내 **CPU를 100%로 태우는** 간단한 부하 테스트 방법이다. `&`로 백그라운드 실행하며, 테스트 후에는 `kill`로 종료해야 Scale In이 동작한다.
+
+---
+
+## 📝 정리
+
+```
+Private + Auto Scaling
+├─ 네트워크  프라이빗 서브넷(IGW 경로 없음) + 라우팅
+├─ ASG       ALB는 퍼블릭 서브넷에! (핵심 함정)
+├─ HTTPS     ALB 리스너 + ACM 인증서
+├─ 정책      Scale Out(>70% +1) / Scale In(<30% -1)
+└─ 테스트    yes > /dev/null & 로 CPU 부하
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **프라이빗 아키텍처** | 서버는 숨기고 ALB만 노출 |
+| **동적 크기 조정** | CloudWatch 경보 → 자동 증감 |
+| **부하 테스트** | `yes > /dev/null &` |
+
+이 아키텍처의 핵심은 **서버를 프라이빗에 숨기고 ALB만 외부에 두는 것**, 그리고 **CloudWatch 경보로 Scale Out/In을 자동화**하는 것이다. 특히 ASG 생성 시 **ALB용으로 퍼블릭 서브넷을 선택**해야 한다는 함정을 기억하자.

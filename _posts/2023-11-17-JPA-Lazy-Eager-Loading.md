@@ -7,92 +7,79 @@ render_with_liquid: false
 future: true
 ---
 
-# 즉시로딩 지연로딩
+## 📌 들어가며
 
-## 지연로딩
+연관된 엔티티를 **언제 가져올지**를 결정하는 것이 로딩 전략이다. 지금 당장 함께 가져올지(**즉시, Eager**), 실제로 쓸 때 가져올지(**지연, Lazy**)를 `fetch` 옵션으로 정한다.
+
+| 전략 | fetch 옵션 | 동작 |
+|------|:---:|------|
+| **지연 로딩** | `FetchType.LAZY` | 연관 객체를 **프록시**로 두고, 실제 사용 시 초기화 |
+| **즉시 로딩** | `FetchType.EAGER` | 조회 시점에 연관 객체를 **함께** 가져옴 |
 
 ---
 
-- fetch 옵션을 Lazy했을 때 가져온 객체는 프록시 객체로 가져와서 실제로 사용할 때(+컨텍스트 관리도 받을때) 초기화 되어서 실제 entity와 연결된다.
+## 1. 지연 로딩 (Lazy)
 
 ```java
-@ManyToOne(fetch = FetchType.LAZY)//Lazy로 하면 Team은 프록시 객체로 준다.
-@JoinColumn(insertable = false, updatable = false, name = "TEAM_ID") //읽기 전용 필드 옵션
+@ManyToOne(fetch = FetchType.LAZY)   // Team을 프록시로 반환
+@JoinColumn(name = "TEAM_ID")
 private Team team;
-
-Member member = new Member();
-member.setUsername("John");
-
-Team team = new Team();
-team.setName("teamA");
-
-em.persist(member);
-
-team.getMembers().add(member);
-
-em.persist(team);
-
-em.flush();
-em.clear();
-
-Member findMember = em.find(Member.class, member.getId());
-
-System.out.println("m= "+findMember.getTeam().getClass());
-
----
-
-m= class hellojpa.Team$HibernateProxy$Flm1Zq0H
 ```
 
-- 따라서 자주 같이 사용하면 fetch 옵션을 eager로 줘서 즉시로딩으로 같이 쓸 수 있다.
+```java
+Member findMember = em.find(Member.class, member.getId());
+System.out.println(findMember.getTeam().getClass());
+// → class hellojpa.Team$HibernateProxy$Flm1Zq0H   (프록시!)
+```
 
-## 즉시로딩
+> 💡 Lazy로 가져온 `team`은 **프록시 객체**다. 실제로 `team`을 사용하는 순간(영속성 컨텍스트 관리 하에서) 초기화되어 실제 엔티티와 연결된다.
 
 ---
+
+## 2. 즉시 로딩 (Eager)
 
 ```java
 @ManyToOne(fetch = FetchType.EAGER)
-@JoinColumn(insertable = false, updatable = false, name = "TEAM_ID") //읽기 전용 필드 옵션
+@JoinColumn(name = "TEAM_ID")
 private Team team;
-
-Member member = new Member();
-member.setUsername("John");
-
-Team team = new Team();
-team.setName("teamA");
-
-em.persist(member);
-
-team.getMembers().add(member);
-
-em.persist(team);
-
-em.flush();
-em.clear();
-
-Member findMember = em.find(Member.class, member.getId());
-
-System.out.println("m= "+findMember.getTeam().getClass());
-
----
-
-m = class hellojpa.Team
 ```
 
-## 프록시와 즉시로딩 주의
+```java
+Member findMember = em.find(Member.class, member.getId());
+System.out.println(findMember.getTeam().getClass());
+// → class hellojpa.Team   (실제 엔티티!)
+```
 
 ---
 
-- 실무에선 가급적 **지연로딩만** 사용!
-- 즉시 로딩은 SQL문제가 발생할 수 있기 때문.
-- 즉시 로딩은 JPQL에서 **N+1문제**를 일으킬 수 있기 때문.(조인문으로 가져온 것들에서 관련된 객체들 전부 가져오기 때문이다.)
-- @ManyToOne, @OneToOne할 때는 **디폴트가 즉시로딩이기 때문에 지연로딩으로** 아예 해버려야 한다.
+## 3. ⚠️ 실무 주의사항
 
-## 지연 로딩 활용
+> ⚠️ **실무에서는 가급적 지연 로딩(Lazy)만 사용하자.**
+
+| 문제 | 설명 |
+|------|------|
+| **예측 불가한 SQL** | 즉시 로딩은 의도치 않은 조인 SQL을 유발 |
+| **N+1 문제** | JPQL에서 연관 객체를 하나씩 추가 조회 → 쿼리 폭증 |
+| **기본값 함정** | `@ManyToOne`, `@OneToOne`은 **기본이 즉시 로딩** → 명시적으로 Lazy로! |
+
+> 💡 즉시 로딩이 꼭 필요할 때는 필드 옵션이 아니라 **JPQL의 fetch 조인**을 사용한다. (기본은 다 Lazy로 두고, 필요할 때만 fetch join)
 
 ---
 
-- Member와 Team은 **자주** 함께 사용 → **즉시 로딩**
-- Member와 Order는 **가끔** 사용 → **지연 로딩**
-- Order와 Product는 **자주** 함께 사용 → **즉시 로딩**
-- **JPQL fetch 조인**을 사용해서 즉시 로딩을 사용해라(기본으로 다 Lazy로 하고)
+## 📝 정리
+
+```
+Eager vs Lazy 로딩
+├─ Lazy    프록시로 두고 사용 시 초기화 (권장)
+├─ Eager   조회 시 함께 로딩 (N+1 위험)
+├─ 함정    @ManyToOne/@OneToOne은 기본이 Eager → Lazy로
+└─ 대안    필요 시 JPQL fetch join
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **지연 로딩** | 실제 사용 시점에 로딩(프록시) |
+| **즉시 로딩** | 조회 시 함께 로딩 |
+| **N+1 문제** | 연관 객체를 반복 조회해 쿼리 폭증 |
+
+로딩 전략의 결론은 명확하다. **"기본은 전부 Lazy, 필요할 때만 fetch join"**. 특히 `@ManyToOne`·`@OneToOne`의 기본값이 Eager라는 함정을 기억하고, 항상 명시적으로 Lazy를 지정하자.

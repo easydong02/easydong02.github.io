@@ -7,48 +7,85 @@ render_with_liquid: false
 future: true
 ---
 
-이번에는 아웃터 조인을 사용해볼게요 ㅎㅎ.
+## 📌 들어가며
+
+이번 글에서는 **아우터 조인(Outer Join)**과 **트랜잭션(Transaction)**을 정리한다.
+
+> **문제 상황**: `dept`에는 40번(운영, 보스턴) 부서가 있지만, `emp`에는 40번 부서 직원이 없다. 일반 조인(inner join)은 **양쪽에 매칭되는 것만** 짝지어, 40번 부서는 아예 나오지 않는다. 하지만 "40번 부서도 (0명이라도) 보여주고 싶다"면? → **Outer Join**
 
 ![Desktop View](/assets/img/Database/SQL/Outer-Join-Transaction/1.png)
 
-이것을 보면 약간 의아한게 있습니다. 분명 dept테이블에는 40번의 운영 부서가 보스턴에 자리하고 있다는 정보는 있는데 막상 emp테이블에는 저 40번 부서에서 근무하는 사람이 없다 이거죠.. 그렇다고 join을 하면 그 기준이 deptno가 같은 것만 짝짓다 보니 40번부서는 아예 나오지도 않습니다. 그런데 우리가 원하는 것은 40번부서도 일단 표현을 하고 0명이 근무하던지.. 이런식으로 나타내는게 좋겠죠? 그래서 outer join을 써보겠습니다.
+---
 
-```
-  1  select * 
-  2  from  dept d  left outer join emp e
-  3* on d.deptno = e.deptno 
-```
+## 1. Outer Join
 
-평소에 쓰던 inner join과 다른 점은 일단 표현방식에서 left outer join이 보이네요. 이것은 dept d 를 왼쪽에 기준시키고 거기에 맞춰 emp 테이블을 붙이는 것입니다. 그리고 where도 아니고 on이 쓰였네요. 한번 해볼까요?
+```sql
+select *
+from dept d left outer join emp e
+on d.deptno = e.deptno;
+```
 
 ![Desktop View](/assets/img/Database/SQL/Outer-Join-Transaction/2.png)
 
-오 역시 테이블이 잘 나오는 군요. 그런데 원래는 14줄이 나왔는데 이번엔 15줄이네요? 맞습니다. 바로 40번 Operations 부서가 나온 것입니다. 물론 여기에 매칭되는 emp테이블의 레코드는 하나도 없군요.. outer join은 이렇게 일단 기준이 되는 테이블의 모든 것을 보여주기는 합니다!
+일반 조인과 달라진 점:
 
-그런데 이렇게 자료를 쭉 펼쳐놓는 것보다 요약해서 보여줍시다!
+| 항목 | Inner Join | Outer Join |
+|------|------|------|
+| 표현 | `from A, B where` | `from A left outer join B on` |
+| 결과 | 매칭되는 것만 (14줄) | 기준 테이블 전부 (**15줄**) |
 
+> 💡 `left outer join`은 **왼쪽 테이블(dept)을 기준**으로, 매칭 안 되는 것도 전부 보여준다. 그래서 매칭되는 emp가 없는 **40번 Operations 부서도 나온다**(emp 쪽은 NULL). 조건에 `where`가 아니라 **`on`**을 쓴다.
+
+**요약 — 부서별 인원수:**
+
+```sql
+select d.deptno, dname, count(e.deptno)
+from dept d left outer join emp e
+on d.deptno = e.deptno
+group by d.deptno, dname
+order by d.deptno asc;
 ```
-  1  select  d.deptno, dname, count(e.deptno)
-  2  from  dept d  left outer join emp e
-  3  on d.deptno = e.deptno 
-  4  group by d.deptno, dname
-  5* order by  d.deptno asc
-```
-
-먼저 deptno와 dname을 그룹화해서 요약을 해봅시다. 그렇다면 select에는 올 수 있는 것이 제약이 되겠죠. 집계함수라던지 그룹화 한 것들을 선택합니다. 그래서 딱 그룹화 한것과 count(e.deptno)를 하여 그 부서에 몇명이 있는지 보여주고 싶습니다. 그리고 부서번호를 오름차순으로 정렬했습니다.
 
 ![Desktop View](/assets/img/Database/SQL/Outer-Join-Transaction/3.png)
 
-잘 나옵니다!
+> 💡 `count(e.deptno)`로 부서별 인원을 세면, 40번 부서는 **0명**으로 나온다. `group by`로 묶었으니 `select`에는 그룹화한 컬럼과 집계함수만 올 수 있다.
 
-**트랜스액션(TransAction)**
+---
 
-DML 작업시 세부업무가 모두 성공해야, 전체를 성공으로 간주하는 논리적 업무수행 단위입니다.
+## 2. 트랜잭션 (Transaction)
 
-우리가 DML( delete,insert,update)할 때 그 수행이 완전히 저장되는 것이 아니라 rollback으로 다시 되돌릴 수 있습니다.
+> **트랜잭션이란?** DML 작업 시 **세부 업무가 모두 성공해야 전체를 성공으로 간주**하는 논리적 업무 수행 단위.
 
-미연의 실수를 방지하는 것이죠. 그리고 그 체크포인트는 commit; 이라는 것입니다. 이거를 해야 확정이 되는 것이죠.
+```
+DML 작업 → (임시 상태) ──commit──► 확정
+                       └──rollback──► 되돌리기
+```
 
-하지만 DDL같은 정의어는 그 작업을 수행할때 commit이 동반됩니다. 즉 수행 하나하나마다 그냥 확정이 되는 것이죠 그래서 쓸 때 조심해야 합니다!
+| 명령 | 역할 |
+|------|------|
+| `commit;` | 변경을 **확정**(저장) |
+| `rollback;` | 변경을 **취소**(되돌리기) |
 
-이번 빅데이터시간에는 여기까지 하겠습니다~
+> 💡 `INSERT`/`UPDATE`/`DELETE`(DML)는 바로 저장되는 게 아니라 **`rollback`으로 되돌릴 수 있다.** 확정하려면 **`commit`**이 필요하다(체크포인트). 이 덕분에 실수를 방지할 수 있다.
+
+> ⚠️ 반면 **DDL**(`create`, `alter`, `drop`)은 수행할 때마다 **commit이 자동으로 동반**되어 즉시 확정된다. 그래서 롤백이 안 되니 조심해야 한다.
+
+---
+
+## 📝 정리
+
+```
+아우터 조인 & 트랜잭션
+├─ Outer Join  기준 테이블 전부 표시 (매칭 안 돼도)
+│              A left outer join B on A.키=B.키
+├─ 트랜잭션    DML은 commit 전까지 rollback 가능
+└─ DDL         자동 commit → 롤백 불가 (주의)
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Inner vs Outer Join** | 매칭만 vs 기준 전부 |
+| **commit / rollback** | 확정 / 되돌리기 |
+| **트랜잭션** | 전부 성공해야 성공인 업무 단위 |
+
+Outer Join은 "한쪽에 없어도 다 보여준다", 트랜잭션은 "commit 전까지 되돌릴 수 있다"가 핵심이다. DML은 롤백이 되지만 **DDL은 자동 commit**이라는 차이를 꼭 기억하자.

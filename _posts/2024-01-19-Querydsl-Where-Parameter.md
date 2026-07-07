@@ -6,104 +6,82 @@ tags: [querydsl, whereparameter]
 render_with_liquid: false
 future: true
 ---
-# **QueryDSL - Where 파라미터: 동적 쿼리를 위한 지름길**
 
-안녕하세요! 오늘은 QueryDSL에서 제공하는 **`where`** 파라미터에 대해 알아보겠습니다. **`where`** 파라미터는 동적인 쿼리를 작성할 때 유용한 기능으로, 다양한 상황에서 활용할 수 있습니다. 지금부터는 **`where`** 파라미터의 다양한 활용법을 예시 코드와 함께 살펴보겠습니다.
+## 📌 들어가며
 
-## ✅**Where 파라미터란?**
+이번 글에서는 QueryDSL로 **동적 쿼리**를 작성하는 두 방식을 정리한다. 조건을 상황에 따라 붙였다 뗐다 하는 것이 핵심이다.
 
----
-
-**`where`** 파라미터는 쿼리에서 조건을 동적으로 추가하거나 제거할 수 있는 기능입니다. 이를 통해 동적인 쿼리를 간편하게 작성할 수 있습니다.
-
-## ✅**단일 조건 사용하기**
+| 방식 | 도구 |
+|------|------|
+| **BooleanBuilder** | 조건을 하나의 빌더에 누적 |
+| **Where 다중 파라미터** | `BooleanExpression` 메소드를 나열 (null이면 무시) |
 
 ---
+
+## 1. BooleanBuilder
 
 ```java
-javaCopy code
 public List<Member> findMembersByCondition(String name, Integer age) {
     BooleanBuilder builder = new BooleanBuilder();
+    if (name != null) builder.and(member.name.eq(name));   // 있을 때만 추가
+    if (age != null)  builder.and(member.age.eq(age));
 
-    if (name != null) {
-        builder.and(member.name.eq(name));
-    }
-
-    if (age != null) {
-        builder.and(member.age.eq(age));
-    }
-
-    return new JPAQueryFactory(entityManager)
+    return queryFactory
         .selectFrom(member)
         .where(builder)
         .fetch();
 }
-
 ```
 
-위 코드에서는 **`BooleanBuilder`**를 사용하여 동적으로 조건을 추가하고 있습니다. **`name`**이나 **`age`**가 **`null`**이 아닐 경우에 해당 조건을 **`builder`**에 추가합니다.
+> 💡 `if`로 값이 있을 때만 조건을 `and`로 누적한다. `null`인 파라미터는 조건에서 빠진다.
 
-## ✅**다중 조건 사용하기**
+## 2. Where 다중 파라미터 (권장)
 
----
+`where()`에 여러 `BooleanExpression`을 나열하면 **null인 것은 자동으로 무시**된다.
 
 ```java
-javaCopy code
-public List<Member> findMembersByConditions(String name, Integer age, String teamName) {
-    return new JPAQueryFactory(entityManager)
+public List<Member> findMembers(String name, Integer age, String teamName) {
+    return queryFactory
         .selectFrom(member)
-        .where(
-            eqName(name),
-            eqAge(age),
-            eqTeamName(teamName)
-        )
+        .where(eqName(name), eqAge(age), eqTeamName(teamName))   // null은 무시됨
         .fetch();
 }
 
 private BooleanExpression eqName(String name) {
-    return name != null ? member.name.eq(name) : null;
+    return name != null ? member.name.eq(name) : null;   // null 반환 시 조건 제외
 }
-
 private BooleanExpression eqAge(Integer age) {
     return age != null ? member.age.eq(age) : null;
 }
-
-private BooleanExpression eqTeamName(String teamName) {
-    return teamName != null ? member.team.name.eq(teamName) : null;
-}
-
 ```
 
-위 코드에서는 각 조건을 별도의 메서드로 분리하여 가독성을 높였습니다. 이러한 방식을 통해 다양한 조건을 추가하거나 변경할 수 있습니다.
+> 💡 조건을 **메소드로 분리**하면 재사용성과 가독성이 좋아진다. `where(A, B, C)`는 A AND B AND C이며, **null인 인자는 건너뛴다.**
 
-## ✅**조건의 조합 사용하기**
+## 3. 조건 조합
 
----
+메소드를 조합해 더 복잡한 조건도 만든다.
 
 ```java
-javaCopy code
-public List<Member> findMembersByCombinedConditions(String name, Integer age, String teamName) {
-    return new JPAQueryFactory(entityManager)
-        .selectFrom(member)
-        .where(
-            eqNameOrTeamName(name, teamName),
-            eqAge(age)
-        )
-        .fetch();
-}
-
 private BooleanExpression eqNameOrTeamName(String name, String teamName) {
     return name != null ? member.name.eq(name) : member.team.name.eq(teamName);
 }
-
 ```
-
-여러 조건을 조합하여 사용할 수도 있습니다. 위 코드에서는 이름 또는 팀 이름이 일치하는 경우를 찾아옵니다.
-
-## 📌**주의사항과 팁**
 
 ---
 
-- **`BooleanBuilder`**나 **`BooleanExpression`**을 사용하여 동적인 조건을 추가할 수 있습니다.
-- 필요에 따라 조건을 메서드로 분리하여 가독성을 높일 수 있습니다.
-- **`BooleanBuilder`**를 사용하면 여러 조건을 논리적으로 조합할 수 있습니다.
+## 📝 정리
+
+```
+QueryDSL 동적 쿼리
+├─ BooleanBuilder   if로 조건 누적 (builder.and)
+├─ Where 다중       where(A, B, C) — null 자동 무시
+└─ 조합             메소드 분리로 재사용·가독성↑
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **BooleanBuilder** | 조건을 누적하는 빌더 |
+| **BooleanExpression** | 조건 하나(null이면 무시) |
+| **Where 다중 파라미터** | 조건 메소드를 나열 |
+
+동적 쿼리는 QueryDSL의 강력한 장점이다. 특히 **Where 다중 파라미터** 방식은 조건을 메소드로 분리해 **재사용·가독성**이 좋아, `BooleanBuilder`보다 실무에서 선호된다.

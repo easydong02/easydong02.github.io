@@ -7,65 +7,74 @@ render_with_liquid: false
 future: true
 ---
 
-# **QueryDSL - Paging: 데이터를 나눠서 효율적으로 가져오기**
+## 📌 들어가며
 
-안녕하세요! 오늘은 QueryDSL에서 데이터를 페이징하는 방법에 대해 알아보겠습니다. 페이징은 대량의 데이터를 조금씩 나눠서 가져오는 기술로, QueryDSL은 이를 간단하게 처리할 수 있는 다양한 기능을 제공합니다. 함께 예시 코드와 함께 살펴보겠습니다.
+이번 글에서는 QueryDSL로 **페이징**하는 방법을 정리한다.
 
-## ✅**페이징이란?**
-
----
-
-페이징은 데이터를 일정량씩 나눠서 가져오는 것을 말합니다. 이는 대량의 데이터를 처리할 때 전체 데이터를 한 번에 로딩하지 않고, 필요한 만큼 가져와서 성능을 최적화하는 데 사용됩니다.
-
-## ✅**`offset`과 `limit`을 활용한 페이징**
+> **페이징이란?** 데이터를 일정량씩 나눠 가져오는 것. 전체를 한 번에 로딩하지 않고 **필요한 만큼만** 가져와 성능을 최적화한다.
 
 ---
 
-QueryDSL에서는 **`offset`**과 **`limit`**을 사용하여 페이징을 할 수 있습니다.
-
-### **예시 코드**
+## 1. offset과 limit
 
 ```java
-
-List<Product> products = new JPAQueryFactory(entityManager)
+List<Product> products = queryFactory
     .selectFrom(product)
     .orderBy(product.price.asc())
-    .offset(10) // 10번째부터 시작
-    .limit(5)  // 5개씩 가져오기
+    .offset(10)   // 10번째부터 시작
+    .limit(5)     // 5개씩
     .fetch();
-
 ```
 
-위 코드에서 **`offset(10)`**은 10번째부터 시작하여 데이터를 가져오고, **`limit(5)`**는 5개씩 가져온다는 의미입니다.
+| 메소드 | 역할 |
+|:---:|------|
+| `offset(n)` | n번째부터 시작 (건너뛰기) |
+| `limit(m)` | m개씩 가져오기 |
 
-## ✅**`fetchResults`를 활용한 페이징**
+> 💡 페이징 시 **`orderBy`로 정렬을 명시**해야 데이터 순서가 일관된다.
 
 ---
 
-**`fetchResults`** 메서드는 결과를 페이징하여 반환하며, 전체 결과 개수도 함께 가져옵니다.
-
-### **예시 코드**
+## 2. fetchResults — 전체 개수까지
 
 ```java
-
-QueryResults<Product> results = new JPAQueryFactory(entityManager)
+QueryResults<Product> results = queryFactory
     .selectFrom(product)
     .orderBy(product.price.asc())
     .offset(10)
     .limit(5)
     .fetchResults();
 
-List<Product> productList = results.getResults();
-long total = results.getTotal();
-
+List<Product> list = results.getResults();   // 현재 페이지 데이터
+long total = results.getTotal();             // 전체 개수
 ```
 
-위 코드에서 **`fetchResults`**를 사용하면 **`List`**와 함께 전체 결과 개수를 알 수 있어 페이징 처리에 유용합니다.
-
-## 📌**주의사항과 팁**
+> 💡 `fetchResults()`는 **한 번의 호출로 데이터와 전체 개수를 함께** 가져와, 전체 페이지 수 계산에 유용하다. (count 쿼리가 추가로 나감)
 
 ---
 
-- 페이징은 대체로 데이터베이스에서 일어나는 작업이므로, 성능 상의 이슈에 주의해야 합니다.
-- **`offset`**과 **`limit`**을 사용할 때, 데이터베이스에서는 전체 데이터를 가져와서 자바에서 **`offset`**과 **`limit`**을 적용하는 방식으로 동작할 수 있습니다. 따라서 대량의 데이터를 다룰 때는 성능 고려가 필요합니다.
-- **`fetchResults`**를 사용하면 한 번의 쿼리로 결과와 전체 데이터 개수를 가져올 수 있어, 전체 페이지 수 등을 계산하는 데 유용합니다.
+## 📌 주의사항과 팁
+
+| 항목 | 내용 |
+|------|------|
+| **성능** | offset이 큰 경우 뒤로 갈수록 느려질 수 있음 |
+| **fetchResults** | 데이터 + 전체 개수 → 페이지 수 계산에 유용 |
+| **정렬 명시** | 페이징에는 정렬이 필수 |
+
+---
+
+## 📝 정리
+
+```
+QueryDSL 페이징
+├─ offset(n)/limit(m)  건너뛰기 + 개수
+├─ fetchResults()      데이터 + 전체 개수
+└─ 필수                orderBy로 정렬 명시
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **offset/limit** | 시작 위치 / 개수 |
+| **fetchResults** | 결과 + 전체 개수 |
+
+페이징은 `offset`·`limit`으로 간단히 구현한다. 전체 페이지 수가 필요하면 `fetchResults()`를 쓰고, 순서 일관성을 위해 항상 `orderBy`를 함께 지정하자.

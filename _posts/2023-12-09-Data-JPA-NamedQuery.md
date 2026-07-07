@@ -7,121 +7,76 @@ render_with_liquid: false
 future: true
 ---
 
-# 네임드 쿼리
+## 📌 들어가며
 
-## 네임드 쿼리?
+이번 글에서는 **네임드 쿼리(Named Query)**를 순수 JPA와 Spring Data JPA에서 각각 사용하는 법을 비교한다.
 
----
-
-→ 네임드 쿼리란 엔티티에서 미리 정한 쿼리문을 저장했다가 레포지토리에서 그것을 바로 쓸 수 있도록 이름을 지정하여 쿼리문을 저장하는 기능이다.
-
-## JPA vs Spring data JPA
+> **네임드 쿼리란?**
+> 엔티티에 **쿼리문을 이름과 함께 미리 저장**해두고, 레포지토리에서 그 이름으로 바로 꺼내 쓰는 기능.
 
 ---
 
-**Member.java**
+## 1. 엔티티에 쿼리 등록 (@NamedQuery)
 
 ```java
 @NamedQuery(
-        name ="Member.findByUsername",
-        query = "select m from Member m where m.username = :username"
+    name = "Member.findByUsername",
+    query = "select m from Member m where m.username = :username"
 )
 public class Member {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "MEMBER_ID")
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String username;
     private int age;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TEAM_ID")
-    private Team team;
-
-    public Member(String username) {
-        this.username = username;
-    }
-
-    public Member(String username, int age, Team team) {
-        this.username = username;
-        this.age = age;
-        this.team = team;
-    }
-
-    public Member(String username, int age) {
-        this.username = username;
-        this.age = age;
-    }
-
-    public void changeTeam(Team team){
-        this.team = team;
-        team.getMembers().add(this);
-    }
+    // ...
 }
 ```
 
-→ 미리 @NamedQuery 어노테이션을 통해서 쿼리문을 만들어놓는다.
+---
 
-### JPA
+## 2. 순수 JPA — createNamedQuery
+
+```java
+public List<Member> findByUsername(String username) {
+    return em.createNamedQuery("Member.findByUsername", Member.class)
+        .setParameter("username", username)
+        .getResultList();
+}
+```
+
+`createNamedQuery`로 이름을 지정해 미리 저장한 쿼리를 실행한다.
 
 ---
 
-**MemberJpaRepository.java**
-
-```java
-public List<Member> findByUsername(String username){
-        return em.createNamedQuery("Member.findByUsername", Member.class)
-                .setParameter("username", username)
-                .getResultList();
-    }
-```
-
-**MemberJpaRepositoryTest.java**
-
-```java
-@Test
-    public void testNamedQuery(){
-        Member m1 = new Member("AAA", 10);
-        Member m2 = new Member("BBB", 20);
-
-        memberJpaRepository.save(m1);
-        memberJpaRepository.save(m2);
-
-        List<Member> result = memberJpaRepository.findByUsername(m2.getUsername());
-        Member findMember = result.get(0);
-        assertThat(findMember).isEqualTo(m2);
-    }
-```
-
-→ createNamedQuery라는 메소드를 사용하여 미리 이름으로써 저장한 쿼리문을 가져와서 작동시킨다.
-
-### Spring Data JPA
-
----
-
-**MemberRepository.java**
+## 3. Spring Data JPA — @Query
 
 ```java
 @Query(name = "Member.findByUsername")
-    List<Member> findByUsername(@Param("username") String username);
+List<Member> findByUsername(@Param("username") String username);
 ```
 
-**MemberRepositoryTest.java**
+| 방식 | 실행 방법 |
+|------|------|
+| 순수 JPA | `em.createNamedQuery("이름")` + `setParameter` |
+| **Data JPA** | `@Query(name="이름")` + `@Param` |
 
-```java
-@Test
-    public void testNamedQuery(){
-        Member m1 = new Member("AAA", 10);
-        Member m2 = new Member("BBB", 20);
+> 💡 Spring Data JPA는 **`@Query`** 어노테이션으로 저장한 이름의 쿼리를 꺼내고, **`@Param`**으로 파라미터를 동적으로 바인딩한다. (사실 메소드 이름이 `엔티티.메소드명` 규칙과 맞으면 `@Query` 없이도 네임드 쿼리를 자동으로 찾는다.)
 
-        memberRepository.save(m1);
-        memberRepository.save(m2);
+---
 
-        List<Member> result = memberRepository.findByUsername(m2.getUsername());
-        Member findMember = result.get(0);
-        assertThat(findMember).isEqualTo(m2);
-    }
+## 📝 정리
+
+```
+네임드 쿼리
+├─ 등록    엔티티에 @NamedQuery(name, query)
+├─ 순수JPA  em.createNamedQuery("이름")
+└─ Data JPA @Query(name="이름") + @Param
 ```
 
-→ 레포지토리에서 @Query라는 어노테이션을 통해서 저장한 이름의 쿼리문을 꺼내온다. 그리고 @Param 어노테이션으로 동적으로 파라미터를 설정한다.
+| 개념 | 한 줄 정의 |
+|------|------|
+| **@NamedQuery** | 이름 붙인 쿼리를 엔티티에 저장 |
+| **@Query(name)** | 저장된 네임드 쿼리 사용 |
+| **@Param** | 파라미터 바인딩 |
+
+네임드 쿼리는 "쿼리를 미리 이름으로 저장"하는 방식이다. Spring Data JPA에서는 `@Query`와 `@Param`으로 간결하게 활용할 수 있다.

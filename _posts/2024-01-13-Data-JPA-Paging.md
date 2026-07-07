@@ -7,100 +7,85 @@ render_with_liquid: false
 future: true
 ---
 
-# **대용량 데이터 손쉽게 처리하기: Spring Data JPA의 페이징 기능**
+## 📌 들어가며
 
-안녕하세요! 오늘은 Spring Data JPA에서 제공하는 페이징에 대해 더 자세히 알아보겠습니다. 페이징은 대용량 데이터를 처리할 때 필수적인 기능으로, Spring Data JPA를 활용하면 편리하게 구현할 수 있습니다.
+이번 글에서는 대용량 데이터를 다룰 때 필수인 **페이징(Paging)**을 Spring Data JPA로 구현하는 법을 정리한다.
 
-## ✅**페이징이란?**
-
----
-
-우선 페이징이 무엇인지 알아보겠습니다. 페이징은 대량의 데이터를 작은 단위로 나누어 가져오는 기술입니다. 이를 통해 한 번에 모든 데이터를 가져오는 것보다 효율적으로 데이터를 관리할 수 있습니다. 특히 웹 애플리케이션에서는 페이지별로 데이터를 나눠 화면에 보여주는 경우가 많습니다.
-
-## ✅**Spring Data JPA에서의 페이징 구현**
+> **페이징이란?**
+> 대량의 데이터를 **작은 단위로 나누어** 가져오는 기술. 한 번에 모든 데이터를 가져오는 것보다 효율적이며, 웹에서 페이지별로 보여줄 때 자주 쓰인다.
 
 ---
 
-Spring Data JPA에서 페이징은 **`Pageable`** 인터페이스를 통해 설정됩니다. 이 인터페이스를 통해 페이지 번호, 페이지 크기, 정렬 조건 등을 설정할 수 있습니다. 그리고 **`Page`** 객체를 통해 페이징된 결과를 받을 수 있습니다.
+## 1. Pageable과 Page
 
-### **예시 코드**
+Spring Data JPA의 페이징은 **`Pageable`**(요청 정보)과 **`Page`**(결과)로 이뤄진다.
 
 ```java
-
-@Service
-public class ProductService {
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    // 페이지별 상품 목록 가져오기
-    public Page<Product> getProductsByPage(int pageNumber, int pageSize) {
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
-
-        return productRepository.findAll(pageable);
-    }
+public Page<Product> getProductsByPage(int pageNumber, int pageSize) {
+    Pageable pageable = PageRequest.of(pageNumber, pageSize);   // 요청 정보 생성
+    return productRepository.findAll(pageable);                 // Page 반환
 }
-
 ```
 
-이렇게 간단한 코드로 페이지별 상품 목록을 가져올 수 있습니다. **`Pageable`**을 생성하고 **`findAll(pageable)`** 메서드를 호출하면, 해당 페이지의 데이터를 가져올 수 있습니다.
-
-## ✅**정렬 조건 추가하기**
-
----
-
-때로는 특정 기준으로 데이터를 정렬하여 가져오고 싶을 수 있습니다. Spring Data JPA에서는 **`Sort`** 객체를 통해 정렬 조건을 추가할 수 있습니다.
-
-### **예시 코드**
-
-```java
-
-@Service
-public class ProductService {
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    // 정렬된 페이지별 상품 목록 가져오기
-    public Page<Product> getSortedProductsByPage(int pageNumber, int pageSize, String sortBy) {
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(sortBy));
-
-        return productRepository.findAll(pageable);
-    }
-}
-
-```
-
-이렇게 **`Sort.by()`** 메서드를 사용하여 정렬 조건을 추가할 수 있습니다.
-
-## ✅**Pageable의 개념**
+| 요소 | 역할 |
+|------|------|
+| `PageRequest.of(번호, 크기)` | 페이지 요청 생성 |
+| `findAll(pageable)` | 해당 페이지 데이터 조회 |
+| `Page<T>` | 페이징된 결과 (전체 개수·총 페이지 포함) |
 
 ---
 
-**`Pageable`**은 인터페이스로, 페이지 요청 정보를 캡슐화한 객체입니다. 주로 다음과 같은 메서드가 사용됩니다.
-
-- **`getPageNumber()`**: 현재 페이지 번호를 반환합니다.
-- **`getPageSize()`**: 페이지당 아이템 수를 반환합니다.
-- **`getSort()`**: 정렬 조건을 반환합니다.
-
-### **예시 코드**
+## 2. 정렬 조건 추가 (Sort)
 
 ```java
-
-public Page<Product> getProductsByPageAndSort(int pageNumber, int pageSize, String sortBy) {
+public Page<Product> getSortedProductsByPage(int pageNumber, int pageSize, String sortBy) {
     Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(sortBy));
-
     return productRepository.findAll(pageable);
 }
-
 ```
 
-이렇게 **`PageRequest.of(pageNumber, pageSize, Sort.by(sortBy))`**와 같이 사용하여 페이지와 정렬을 함께 다룰 수 있습니다.
-
-## 📌**주의사항과 팁**
+**`Sort.by(정렬기준)`**을 `PageRequest`에 넣어 페이징과 정렬을 함께 처리한다.
 
 ---
 
-- **정렬 조건의 중요성**: 페이징을 사용할 때는 정렬 조건을 명시하는 것이 좋습니다. 그렇지 않으면 데이터의 일관성이 없어질 수 있습니다.
-- **인덱스 확인**: 대량의 데이터를 다루는 경우에는 데이터베이스에서 필요한 인덱스가 생성되어 있는지 확인하여 성능을 향상시킬 수 있습니다.
-- **큰 데이터셋에서의 효율성**: 대용량의 데이터를 처리할 때는 적절한 페이지 크기를 선택하여 효율성을 고려해야 합니다.
+## 3. Pageable의 주요 메소드
+
+```java
+Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(sortBy));
+```
+
+| 메소드 | 반환 |
+|------|------|
+| `getPageNumber()` | 현재 페이지 번호 |
+| `getPageSize()` | 페이지당 아이템 수 |
+| `getSort()` | 정렬 조건 |
+
+---
+
+## 📌 주의사항과 팁
+
+| 항목 | 내용 |
+|------|------|
+| **정렬 조건 명시** | 없으면 데이터 일관성이 깨질 수 있음 |
+| **인덱스 확인** | 대량 데이터는 인덱스로 성능 향상 |
+| **페이지 크기** | 대용량은 적절한 크기 선택으로 효율 확보 |
+
+---
+
+## 📝 정리
+
+```
+페이징
+├─ 요청    PageRequest.of(번호, 크기 [, Sort])
+├─ 조회    findAll(pageable) → Page<T>
+├─ 정렬    Sort.by(기준)
+└─ 주의    정렬 명시 + 인덱스 + 페이지 크기
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Pageable** | 페이지 요청 정보(번호·크기·정렬) |
+| **Page** | 페이징 결과(데이터 + 메타) |
+| **Sort** | 정렬 조건 |
+
+페이징은 대용량 데이터를 **나눠서 효율적으로** 다루는 필수 기능이다. `PageRequest.of(...)` 하나로 페이지·크기·정렬을 지정할 수 있어, 몇 줄로 견고한 페이징을 구현할 수 있다.

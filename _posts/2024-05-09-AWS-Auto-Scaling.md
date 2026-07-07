@@ -4,80 +4,120 @@ date: 2024-05-09 00:00:00 +0900
 categories: [Infra, AWS]
 tags: [aws, autoscaling]
 render_with_liquid: false
+mermaid: true
 ---
 
-## ✅ Auto Scaling이란?
+## 📌 들어가며
+
+이번 글에서는 AWS의 **Auto Scaling**을 정리한다. 트래픽에 따라 EC2 인스턴스 수를 **자동으로 늘리고 줄여**, 부하는 감당하면서 비용은 아끼는 기능이다. **AMI 생성 → 시작 템플릿 → Auto Scaling 그룹(ASG)**의 순서로 구축한다.
+
+> **Auto Scaling이란?** 애플리케이션 부하를 처리할 **정확한 수의 인스턴스를 유지**하는 서비스. **Auto Scaling 그룹(ASG)**에 최소·최대·희망 용량을 지정하면, AWS가 그 범위 안에서 인스턴스 수를 자동으로 조절한다.
 
 ---
 
-애플리케이션의 로드를 처리할 수 있는 **정확한 수의 인스턴스를 보유하도록 보장**할 수 있습니다. **Auto Scaling 그룹**이라는 인스턴스 모음을 생성합니다. 각 Auto Scaling 그룹의 최소 인스턴스 수를 지정할 수 있으며, Auto Scaling에서는 그룹의 크기가 이 값 아래로 내려가지 않습니다. 각 Auto Scaling 그룹의 최대 인스턴스 수를 지정할 수 있으며, Auto Scaling에서는 그룹의 크기가 이 값을 넘지 않습니다. **원하는 용량을 지정한 경우 그룹을 생성한 다음에는 언제든지 Auto Scaling에서 해당 그룹에서 이만큼의 인스턴스를 보유할 수 있습니다.**
+## 1. 핵심 구성과 흐름
 
-## ✅ Auto Scaling 그룹 생성
+Auto Scaling은 **"어떤 인스턴스를(AMI) → 어떤 설정으로(시작 템플릿) → 몇 개나(ASG)"** 유지할지를 정의하는 구조다.
+
+```mermaid
+flowchart LR
+    AMI["📀 AMI<br/>(인스턴스 이미지)"] --> LT["📋 시작 템플릿<br/>(키·보안그룹 등)"]
+    LT --> ASG["📦 Auto Scaling 그룹<br/>(min·max·desired)"]
+    ASG --> E1["💻 EC2"]
+    ASG --> E2["💻 EC2"]
+    ALB["⚖️ ALB"] --> ASG
+```
+
+| 용어 | 역할 |
+|------|------|
+| **AMI** | 복제할 인스턴스의 이미지(스냅샷 기반) |
+| **시작 템플릿** | 인스턴스 생성 설정(AMI·키·보안그룹) |
+| **ASG** | 인스턴스 수를 관리(최소/최대/희망) |
+| **ALB** | 늘어난 인스턴스로 트래픽 분산 |
 
 ---
 
-### ☑️ 기존 인스턴스 이미지로 만들기
+## 2. 기존 인스턴스로 AMI 생성
+
+Auto Scaling에는 **복제 기준이 되는 이미지(AMI)**가 필요하다. 기존 web 서버 인스턴스를 이미지로 만든다. 스냅샷이 먼저 생성되어 대기 중이 되고, **사용 가능** 상태가 되면 AMI 목록에서 확인할 수 있다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled.png)
 
-먼저 Auto Scaling을 하려면 기준이 되는 인스턴스 이미지가 필요합니다. 그래서 원래 있던 web서버 인스턴스를 이미지로 만듭니다.
-
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%201.png)
-
-보시면 스냅샷이 먼저 만들어지고 대기중으로 되어있습니다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%202.png)
 
-사용가능 상태가 되면 AMI에서도 만든 이미지를 볼 수 있습니다. 다음 단계로 진행합니다.
+---
 
-### ☑️ 시작 템플릿 생성
+## 3. 시작 템플릿 생성
+
+스케일링할 대상을 정의하는 **시작 템플릿**을 만든다. OS 이미지로 방금 만든 **AMI**를 고르고, 키페어와 보안 그룹은 기존 web 서버용을 선택한다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%203.png)
 
-이제 스케일링할 대상 템플릿을 생성합니다.
-
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%204.png)
-
-OS 이미지를 선택하면 아까만든 AMI 가 보입니다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%205.png)
 
-키페어는 원래 있던 키페어로하고 보안그룹은 기존에 만들었던 web서버 보안그룹을 선택합니다.
-
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%206.png)
 
-생성을하면 시작템플릿 목록에 방금 만든 템플릿이 존재합니다.
+---
 
-### ☑️ 오토 스케일링 그룹 생성
+## 4. Auto Scaling 그룹 + 로드밸런서
+
+시작 템플릿을 선택해 실제 ASG를 만든다. VPC·서브넷은 내가 만든 것으로 하고, 로드밸런서는 **새 ALB**를 **Internet-facing** 체계로 생성한다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%207.png)
 
-이제 오토 스케일링을 실제로 할 그룹을 생성합니다. 아까 만든 시작 템플릿을 선택합니다.
-
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%208.png)
-
-vpc는 제가 만든 vpc와 서브넷도 마찬가지로 합니다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%209.png)
 
-로드 밸런서는 새 로드밸런서로 하고 ALB를 선택합니다. 그리고 체계는 Internet-facing을 선택합니다. 이게 번역이 한글로 나왔다 영어로 나왔다 하니 Internet-facing단어를 잘 기억합시다!
-
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%2010.png)
 
-리스너 및 라우팅에선 대상 그룹을 생성해봅시다.
+> ⚠️ 콘솔 언어에 따라 **Internet-facing**이 한글/영어로 번갈아 표시되니, **"Internet-facing"** 이라는 단어 자체를 기억해두자. 외부 트래픽을 받으려면 반드시 이 옵션이어야 한다.
+
+---
+
+## 5. 용량 · 유지 관리 · 알림
+
+**희망 용량(그룹 크기)**은 초기 인스턴스 수다. 2로 하면 AMI 기반 인스턴스 2개로 시작한다. **최소/최대 용량**으로 범위를 정하고, **대상 추적 정책**을 걸면 지표에 따라 동적으로 조정된다(여기서는 정책 없음으로 수동 실습).
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%2011.png)
 
-원하는 용량(그룹 크기)는 초기 크기입니다 2개로 할경우 아까만든 AMI가 2개로 인스턴스로 되어 시작합니다. 그리고 크기 조정에서는 최소 용량과 최대 용량을 설정합니다. 대상 추적 크기 조정 정책을 선택하면 관련 지표에 따라 동적으로 크기가 조정됩니다. 저는 정책 없음으로 수동으로 해보겠습니다.
+| 용량 설정 | 의미 |
+|------|------|
+| **희망(desired)** | 평상시 유지할 인스턴스 수 |
+| **최소(min)** | 이 아래로 줄지 않음 |
+| **최대(max)** | 이 위로 늘지 않음 |
+
+**유지 관리 정책**에서는 인스턴스 교체 시 **새 인스턴스가 뜰 때까지 기존 인스턴스를 살려두도록** 설정해 무중단을 노린다. 알림은 이메일로 받고, 태그로 `Name=asg`를 지정한다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%2012.png)
 
-유지 관리 정책에서는 인스턴스 교체 이벤트의 동작 방식을 설정합니다. 저는 만약 인스턴스가 교체될 때는 새로운 인스턴스가 시작될때까지는 다른 인스턴스가 살아있게 하겠습니다.
-
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%2013.png)
-
-이메일로 알림을 받겠습니다.
 
 ![Untitled](/assets/img/Infra/AWS/auto/Untitled%2014.png)
 
-태그에는 asg로 Name 키값을 정해줍니다!
+> 💡 **대상 추적 정책**은 "CPU 50% 유지"처럼 목표 지표를 정하면 AWS가 알아서 인스턴스를 늘리고 줄인다. 실무에서는 수동 대신 이 방식으로 트래픽에 자동 반응하게 두는 것이 일반적이다.
+
+---
+
+## 📝 정리
+
+```
+Auto Scaling
+├─ AMI        복제 기준 이미지 생성
+├─ 시작 템플릿 AMI + 키 + 보안그룹 설정
+├─ ASG        min/max/desired로 인스턴스 수 관리
+├─ ALB        Internet-facing으로 트래픽 분산
+└─ 정책       대상 추적 → 지표 기반 자동 조정
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Auto Scaling** | 부하에 따라 인스턴스 수 자동 조절 |
+| **시작 템플릿** | 인스턴스 생성 설정 청사진 |
+| **대상 추적 정책** | 지표 목표 기반 자동 스케일 |
+
+Auto Scaling의 핵심은 **AMI → 시작 템플릿 → ASG**로 이어지는 구성과, **min/max/desired로 규모를 통제**하는 것이다. ALB와 결합하면 트래픽 증가에 자동으로 인스턴스를 늘려 대응할 수 있다.

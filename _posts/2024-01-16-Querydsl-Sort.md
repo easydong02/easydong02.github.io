@@ -7,77 +7,71 @@ render_with_liquid: false
 future: true
 ---
 
-# **QueryDSL - Sort: 데이터 정렬을 손쉽게!**
+## 📌 들어가며
 
-안녕하세요! 오늘은 QueryDSL에서 데이터를 정렬하는데 사용되는 **`sort`**에 대해 알아보겠습니다. 데이터를 특정 기준에 따라 정렬하는 것은 많은 상황에서 필요한데, QueryDSL은 이를 간단하게 처리할 수 있는 다양한 기능을 제공합니다. 함께 예시 코드와 함께 살펴보도록 하겠습니다.
+이번 글에서는 QueryDSL의 **정렬**을 정리한다.
 
-## ✅**Sort란?**
-
----
-
-정렬은 데이터를 특정 기준에 따라 순서대로 나열하는 것을 말합니다. QueryDSL에서는 **`orderBy`**와 **`sort`**를 통해 데이터를 정렬할 수 있습니다. **`orderBy`**는 JPQL과 유사한 방식으로 사용되고, **`sort`**는 Java 8부터 도입된 **`Comparator`**를 활용하여 더 유연하게 정렬할 수 있습니다.
-
-## ✅**`orderBy`를 사용한 정렬**
+> QueryDSL에서 정렬은 두 가지 방식이 있다.
+> - **`orderBy`**: DB 단에서 정렬 (JPQL 유사)
+> - **`Comparator`(sort)**: 가져온 뒤 자바에서 정렬 (Java 8 스트림)
 
 ---
 
-**`orderBy`**를 사용하면 간단하게 엔티티의 필드에 따라 정렬할 수 있습니다.
-
-### **예시 코드**
+## 1. orderBy — DB 정렬
 
 ```java
-
-List<Product> products = new JPAQueryFactory(entityManager)
+List<Product> products = queryFactory
     .selectFrom(product)
-    .orderBy(product.price.desc(), product.name.asc())
+    .orderBy(product.price.desc(), product.name.asc())   // 가격↓, 이름↑
     .fetch();
-
 ```
 
-위 코드에서 **`orderBy(product.price.desc(), product.name.asc())`**는 **`price`**를 내림차순으로 정렬하고, 그 다음에 **`name`**을 오름차순으로 정렬합니다.
+> 💡 여러 정렬 기준을 콤마로 나열하면 **순서대로 우선 적용**된다. (가격 내림차순 → 같으면 이름 오름차순)
 
-## ✅**`sort`를 사용한 정렬**
-
----
-
-**`sort`**를 사용하면 Java 8의 **`Comparator`**를 이용하여 더 유연하게 정렬할 수 있습니다.
-
-### **예시 코드**
+## 2. Comparator — 자바 정렬
 
 ```java
-
-List<Product> products = new JPAQueryFactory(entityManager)
-    .selectFrom(product)
-    .fetch()
+List<Product> products = queryFactory
+    .selectFrom(product).fetch()
     .stream()
-    .sorted(Comparator.comparing(Product::getPrice).reversed())
+    .sorted(Comparator.comparing(Product::getPrice).reversed())   // 가격↓
     .collect(Collectors.toList());
-
 ```
 
-위 코드에서 **`Comparator.comparing(Product::getPrice).reversed()`**는 **`price`**를 내림차순으로 정렬합니다.
+| 방식 | 정렬 위치 | 특징 |
+|------|:---:|------|
+| **orderBy** | **DB** | 효율적 (권장) |
+| **Comparator** | 자바(메모리) | 유연하나 자원 소모↑ |
 
-## ✅**다중 정렬**
+## 3. 다중 정렬
+
+```java
+.orderBy(product.category.asc(), product.price.desc())   // 카테고리↑, 가격↓
+```
 
 ---
 
-여러 필드에 대해 다중 정렬도 간단하게 처리할 수 있습니다.
+## 📌 주의사항과 팁
 
-### **예시 코드**
+> 💡 `nullsFirst()`, `nullsLast()`로 **null 값의 정렬 위치**를 지정할 수 있다.
 
-```java
+> ⚠️ `Comparator` 정렬은 **DB에서 가져온 이후** 이뤄지므로, DB 정렬(`orderBy`)보다 자원 소모가 크다. 가급적 `orderBy`를 쓰자.
 
-List<Product> products = new JPAQueryFactory(entityManager)
-    .selectFrom(product)
-    .orderBy(product.category.asc(), product.price.desc())
-    .fetch();
+---
+
+## 📝 정리
 
 ```
+QueryDSL 정렬
+├─ orderBy      DB 정렬 (권장), 다중 기준 나열
+├─ Comparator   자바 정렬 (유연, 자원↑)
+└─ null 처리    nullsFirst() / nullsLast()
+```
 
-위 코드에서는 **`category`**를 오름차순으로 정렬하고, 그 다음에 **`price`**를 내림차순으로 정렬합니다.
+| 개념 | 한 줄 정의 |
+|------|------|
+| **orderBy** | DB에서 정렬 |
+| **Comparator** | 자바에서 정렬 |
+| **다중 정렬** | 여러 기준 순서대로 |
 
-## 📌**주의사항과 팁**
-
-- **`orderBy`**나 **`sort`**는 특정 필드에 대한 정렬 외에도 **`nullsFirst()`**, **`nullsLast()`** 등을 통해 **`null`** 값을 어떻게 처리할지 설정할 수 있습니다.
-- 다양한 정렬 조건을 유연하게 활용하여 필요에 맞게 데이터를 정렬하세요.
-- 정렬은 데이터베이스에서 가져온 이후에 이루어지므로, 데이터베이스에서 정렬하는 것보다 자원 소모가 높을 수 있습니다.
+정렬은 **가급적 `orderBy`(DB)**를 쓰는 게 효율적이다. 자바 `Comparator`는 유연하지만 메모리에서 정렬하므로 자원 소모가 크다는 점을 기억하자.

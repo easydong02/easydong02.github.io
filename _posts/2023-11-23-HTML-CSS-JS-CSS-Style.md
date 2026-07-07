@@ -7,65 +7,75 @@ render_with_liquid: false
 future: true
 ---
 
-오늘은 HTML을 대충 마치고 CSS 살짝 배웠습니다. 편하더라고용 ㅎㅎ
+## 📌 들어가며
 
+HTML을 대충 마치고 이번엔 **CSS**를 살짝 배웠다. HTML로 만든 구조에 **스타일(디자인)**을 입히는 것이 CSS다.
+
+---
+
+## 1. 왜 CSS가 필요한가?
+
+링크 3개에 색을 주고 싶다면 각각에 `style`을 넣으면 된다. 하지만 링크가 **수백~수천 개**인 대형 사이트라면? 일일이 다는 건 비효율적이다. 이때 **CSS로 한 번에** 스타일을 적용한다.
+
+```html
+<style>
+    a {                        /* 모든 a 태그에 영향 */
+        color: red;
+        text-decoration: none; /* 밑줄 제거 */
+    }
+</style>
 ```
-<!DOCTYPE HTML>
-<html>
 
+> 💡 `<style>` 안의 `a { }`는 **모든 `<a>` 태그에 영향**을 준다. 마치 상속과 같은 개념이다. HTML보다 훨씬 다양한 꾸밈 기능이 있다.
 
+---
 
-<head>
-    <meta charset="utf-8">
-    <title>W3C</title>
-    <style>
-        a{
-            color: red;
-            text-decoration: none;
-        }
+## 2. 개별 vs 일괄 스타일
 
-
-    </style>
-</head>
-
-
-<body>
-    <img src="https://img1.daumcdn.net/thumb/R720x0/?fname=http%3A%2F%2Ft1.daumcdn.net%2Fliveboard%2Ffaibet%2Fe0f37522d0694c1b8cb2b7a1953b6929.jpg" width="20%">
+```html
 <ol>
-    <h1>WEB</font></h1>
-    <li><a href="1.html">HTML</a></li><br>
-    <li><a href="2.html" style="color :blue; text-decoration: underline;">CSS</a></li><br>
-    <li><a href="3.html">JS</a></li><br>
+    <li><a href="1.html">HTML</a></li>
+    <!-- 개별 스타일: 이 링크만 파란색 밑줄 -->
+    <li><a href="2.html" style="color:blue; text-decoration:underline;">CSS</a></li>
+    <li><a href="3.html">JS</a></li>
 </ol>
-
-<h2>CSS란 무엇인가?</h2>
-<p>Web browsers receive HTML documents from a web server or from local storage and render the documents into multimedia web pages. HTML describes the structure of a web page semantically and originally included cues for the appearance of the document.
-</p>
-<p style="margin-top: 40px;">HTML can embed programs written in a scripting language such as JavaScript, which affects the behavior and content of web pages. Inclusion of CSS defines the look and layout of content. The World Wide Web Consortium (W3C), former maintainer of the HTML and current maintainer of the CSS standards, has encouraged the use of CSS over explicit presentational HTML since 1997.</p>
-
-<p><a href="http://www.naver.com" target="blank" title="NAVER">네이버</a></p>
-
-</body>
-</html>
 ```
 
-다른 웹페이지를 만들었습니다. <ol>바디를 보시면 링크가 걸린 3개의 태그가 있습니다. 여기에 전부 색깔을 주고 싶다면 어떻게 할까요? 3개니까 그냥 하면 되겠죠?ㅎㅎ 맞습니다. 적은 개수에는 일일이 해도 되겠지만 만약 대형사이트같은 링크가 수백~수천개씩 걸린 사이트라면? 손가락에 관절염걸리겠죠ㅎㅎ..
+| 방법 | 적용 범위 |
+|------|------|
+| `<style> a { }` | **모든** a 태그 (일괄) |
+| `<a style="...">` | **그 태그만** (개별) |
 
-```
-    <style>
-        a{
-            color: red;
-            text-decoration: none;
-        }
-
-
-    </style>
-```
-
-<style> 바디에 보시면 a하고 중괄호가 있네요! 이것은 a태그가 들어간 모든 라인에 영향을 주는 것입니다. 마치 상속과도 같은 개념이죠! 여기서부터가 CSS시작인데 확실히 HTML보다 여러가지 기능이 있을것같습니다.!
+> 💡 개별 스타일은 일괄 스타일을 덮어쓴다. 적은 개수는 개별로, 많은 개수는 `<style>`로 일괄 처리하는 것이 효율적이다.
 
 ![Desktop View](/assets/img/Frontend/HTML-CSS-JS/CSS-Style/1.png)
 
-이것저것 실험해봤습니다 ㅎㅎ 사진은 그냥 인터넷에 돌아다니는거 받았어요 신세휘님이라고 하네요 ^~^
+---
 
-오늘은 여기까지 하겠습니다!
+## 3. 여백 조정
+
+```html
+<p style="margin-top: 40px;">위쪽 여백 40px</p>
+```
+
+`margin`으로 요소 바깥의 여백을 조정할 수 있다.
+
+---
+
+## 📝 정리
+
+```
+CSS 기초
+├─ 목적    HTML 구조에 디자인 입히기
+├─ 일괄    <style> a { color: red; } → 모든 a 태그
+├─ 개별    <a style="..."> → 그 태그만 (우선)
+└─ 속성    color, text-decoration, margin ...
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **CSS** | HTML의 디자인·레이아웃 담당 |
+| **`<style> 태그{}`** | 태그별 일괄 스타일 |
+| **인라인 style** | 개별 요소 스타일(우선) |
+
+CSS는 "구조(HTML)와 디자인(CSS)의 분리"라는 웹의 핵심 원칙을 실현한다. 태그 선택자로 한 번에 스타일을 적용하면, 대형 사이트도 효율적으로 꾸밀 수 있다.

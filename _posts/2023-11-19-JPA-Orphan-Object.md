@@ -7,80 +7,77 @@ render_with_liquid: false
 future: true
 ---
 
-# 고아 객체
+## 📌 들어가며
 
-## 고아 객체?
+부모와의 관계가 끊어진 자식 엔티티를 **고아 객체(orphan)**라 한다. JPA는 이 고아 객체를 자동으로 DB에서 삭제하는 기능을 제공한다.
+
+> **고아 객체**: 부모 엔티티와 **관계가 끊어진** 자식 엔티티.
 
 ---
 
-- 부모 엔티티와 관계가 끊어진 자식 엔티티
+## 1. orphanRemoval
 
 ```java
 @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
 private List<Child> childList = new ArrayList<>();
 ```
 
-- orphanRemoval를 true로 주면 저 객체가 사라지면 db에서도 delete됨.
-
-```java
-Child child = new Child();
-Child child2 = new Child();
-
-Parent parent = new Parent();
-
-parent.addChild(child);
-parent.addChild(child2);
-
-em.persist(parent);
-
-em.flush();
-em.clear();
-
-Parent findParent = em.find(Parent.class, parent.getId());
-findParent.getChildList().remove(0);
-
----
-
-/* delete hellojpa.Child */ delete
-        from
-            Child
-        where
-            id=?
-```
-
-## 고아 객체 - 주의
-
----
-
-- 참조가 되지 않는 것은 아예 db에서 지워버리기 때문에 조심해야 함.
-- 참조하는 곳이 하나일 때 사용해야 겠죠?
-- 부모를 제거하면 자식도 제거됨( = CascadeType.REMOVE, ALL)
+`orphanRemoval = true`를 주면, **컬렉션에서 자식을 제거하면 DB에서도 DELETE**된다.
 
 ```java
 Parent findParent = em.find(Parent.class, parent.getId());
-findParent.getChildList().clear();
-
----
-
-Hibernate:
-    /* delete hellojpa.Child */ delete
-        from
-            Child
-        where
-            id=?
-Hibernate:
-    /* delete hellojpa.Child */ delete
-        from
-            Child
-        where
-            id=?
+findParent.getChildList().remove(0);   // 컬렉션에서 제거
 ```
 
-- OneToOne, ManyToOne에서만 가능!
-
-## 영속성 전이 + 고아 객체, 생명주기
+```sql
+-- 자동으로 delete!
+delete from Child where id=?
+```
 
 ---
 
-- CascadeType.ALL 과 orphanRemoval = true를 같이쓰면? → **자식 객체의 생명 주기를 부모 객체에서 관리가 가능하다**!
-- **도메인 주도 설계(DDD)** 구현할 때 유용!
+## 2. ⚠️ 주의사항
+
+> ⚠️ **참조가 끊어진 것을 아예 DB에서 지워버리므로** 매우 조심해야 한다.
+
+| 규칙 | 설명 |
+|------|------|
+| **단일 참조일 때만** | 자식을 참조하는 곳이 **하나**일 때 사용 |
+| **부모 제거 = 자식 제거** | 부모를 지우면 자식도 삭제 (`CascadeType.REMOVE`와 같은 효과) |
+| **적용 대상** | `@OneToOne`, `@OneToMany`에서만 가능 |
+
+```java
+findParent.getChildList().clear();   // 전체 제거 → 모든 자식 delete
+```
+
+---
+
+## 3. Cascade.ALL + orphanRemoval = 생명주기 위임
+
+> 💡 **`CascadeType.ALL` + `orphanRemoval = true`**를 함께 쓰면, **자식 객체의 생명주기를 부모가 완전히 관리**하게 된다. 부모를 통해 자식을 생성·삭제할 수 있어, **도메인 주도 설계(DDD)** 구현에 유용하다.
+
+```
+CascadeType.ALL  ─┐
+                  ├─► 자식의 생명주기를 부모가 관리 (DDD)
+orphanRemoval=true ┘
+```
+
+---
+
+## 📝 정리
+
+```
+고아 객체(orphanRemoval)
+├─ 정의   부모와 관계 끊긴 자식
+├─ 동작   컬렉션에서 제거 → DB DELETE
+├─ 주의   단일 참조일 때만! 부모 제거=자식 제거
+└─ 조합   Cascade.ALL + orphanRemoval → 생명주기 위임(DDD)
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **고아 객체** | 부모 참조가 끊긴 자식 |
+| **orphanRemoval** | 참조 끊기면 자동 삭제 |
+| **생명주기 위임** | 부모가 자식의 생성·삭제 관리 |
+
+`orphanRemoval`은 강력하지만 위험하다. **자식이 오직 한 부모에게만 속할 때** 써야 하며, Cascade.ALL과 결합하면 부모가 자식의 생명주기를 온전히 책임지는 DDD 스타일 설계가 가능해진다.

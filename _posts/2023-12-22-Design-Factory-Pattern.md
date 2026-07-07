@@ -6,245 +6,91 @@ tags: [designpattern, factorypattern]
 render_with_liquid: false
 ---
 
-# FactoryPattern
+## 📌 들어가며
 
-
----
+이번 글에서는 **팩토리 패턴(Factory Pattern)**을 다룬다. 무엇이든 될 수 있는 메타몽처럼, 객체 생성을 유연하게 다루는 패턴이다.
 
 ![Desktop View](/assets/img/Design-Pattern/Factory-Pattern/1.gif)
 
-무엇이든 될 수 있는 메타몽
-
----
-
-**팩토리 패턴**은 객체를 사용하는 코드에서 **객체 생성 부분**을 떼어내 추상화한 패턴이자 상속 관계에 있는 두 클래스에서 **상위 클래스가 중요한 뼈대**를 결정하고, **하위 클래스에서 객체 생성에 관여한 구체적인 내용을 결정**하는 패턴입니다.
-
-### 팩토리패턴 구조
-
----
-
+> **팩토리 패턴이란?**
+> 객체를 사용하는 코드에서 **객체 생성 부분을 떼어내 추상화**한 패턴. 상위 클래스가 **뼈대**를 결정하고, 하위 클래스가 **구체적인 객체 생성**을 담당한다.
 
 ![Desktop View](/assets/img/Design-Pattern/Factory-Pattern/2.png)
 
-### 그래서 쓰면 뭐가 좋은가요?
+**장점:**
+
+| 장점 | 설명 |
+|------|------|
+| **느슨한 결합** | 상위·하위 클래스 분리, 생성 방식을 알 필요 없음 |
+| **유연성** | 생성 로직이 분리되어 유연 |
+| **유지보수성** | 생성 로직을 **한 곳만** 고치면 됨 |
 
 ---
 
-**상위 클래스와 하위 클래스가 분리**되기 때문에 느슨한 결합을 가지며 상위 클래스에서는 인스턴스 생성방식에 대해 전혀 알 필요가 없기 때문에 **더 많은 유연성**을 갖게 됩니다. 그리고 객체 생성 로직이 따로 떼어져 있기 때문에 코드를 **리팩터링하더라도 한곳만 고칠 수 있게 되니 유지 보수성이 증가**됩니다.
+## 1. 팩토리를 안 썼을 때 — 문제점
 
-### 안 썼을 때 VS 썼을 때
+커피(추상) - 라떼/아메리카노(구현) 구조에서, 각 테스트마다 직접 `new`로 생성한다.
+
+```java
+// CoffeeTest
+Coffee latte = new Latte(4000);
+Coffee americano = new Americano(3000);
+
+// CoffeeTest2
+Coffee latte = new Latte(5000);   // 또 직접 new
+```
+
+> ⚠️ 만약 `Latte`의 **생성자가 바뀌면**, `new Latte(...)`를 쓰는 **모든 파일을 수정**해야 한다. 그래서 객체 생성을 책임질 **팩토리**가 필요하다.
 
 ---
 
-**안 썼을 때**
+## 2. 팩토리를 썼을 때
 
----
-
-커피 클래스
-
-```java
-public abstract class Coffee {
-	public abstract int getPrice();
-	
-	@Override
-	public String toString() {
-		return "이 커피의 가격은:" + getPrice();
-	}
-}
-```
-
-라떼 클래스
-
-```java
-public class Latte extends Coffee{
-	private int price;
-	
-	public Latte(int price) {
-		this.price= price;
-	}
-	
-	@Override
-	public int getPrice() {
-		return this.price;
-	}
-}
-```
-
-아메리카노 클래스
-
-```java
-public class Americano extends Coffee{
-	private int price;
-	
-	public Americano(int price) {
-		this.price= price;
-	}
-	
-	@Override
-	public int getPrice() {
-		return this.price;
-	}
-}
-```
-
-커피테스트
-
-```java
-public class CoffeeTest {
-
-	public static void main(String[] args) {
-		Coffee latte= new Latte(4000);
-		Coffee americano = new Americano(3000);
-		
-		System.out.println(latte);
-		System.out.println(americano);
-		
-	}
-
-}
-이 커피의 가격은:4000
-이 커피의 가격은:3000
-```
-
-커피테스트2
-
-```java
-public class CoffeeTest2 {
-
-	public static void main(String[] args) {
-		Coffee latte= new Latte(5000);
-		Coffee americano = new Americano(3500);
-		
-		System.out.println(latte);
-		System.out.println(americano);
-		
-	}
-
-}
-이 커피의 가격은:5000
-이 커피의 가격은:3500
-```
-
-만약 이런 구조에서 Latte클래스의 생성자가 바뀐다면..?
-
-**Latte클래스를 생성하는 모든 파일에서 수정이 필요합니다.**
-
-따라서 이 객체 생성부분을 책임질 팩토리가 필요하게 됩니다.
-
-**썼을 때**
-
----
-
-커피 클래스
-
-```java
-public abstract class Coffee {
-	public abstract int getPrice();
-	
-	@Override
-	public String toString() {
-		return "이 커피의 가격은:" + getPrice();
-	}
-}
-```
-
-라떼 클래스
-
-```java
-public class Latte extends Coffee{
-	private int price;
-	
-	public Latte(int price) {
-		this.price= price;
-	}
-	
-	@Override
-	public int getPrice() {
-		return this.price;
-	}
-}
-```
-
-아메리카노 클래스
-
-```java
-public class Americano extends Coffee{
-	private int price;
-	
-	public Americano(int price) {
-		this.price= price;
-	}
-	
-	@Override
-	public int getPrice() {
-		return this.price;
-	}
-}
-```
-
-디폴트커피 클래스
-
-```java
-public class DefaultCoffee extends Coffee {
-	private int price;
-	
-	public DefaultCoffee() {
-		this.price= -1;
-	}
-	
-	@Override
-	public int getPrice() {
-		return this.price;
-	}
-}
-```
-
-커피팩토리 클래스
+**객체 생성을 팩토리 클래스가 전담**한다.
 
 ```java
 public class CoffeeFactory {
-	public static Coffee getCoffee(String type) {
-
-		if("Latte".equalsIgnoreCase(type))return new Latte(4000);
-
-		else if("Americano".equalsIgnoreCase(type))return new Americano(4500);
-
-		else {
-			return new DefaultCoffee();
-		}
-	}
+    public static Coffee getCoffee(String type) {
+        if ("Latte".equalsIgnoreCase(type))         return new Latte(4000);
+        else if ("Americano".equalsIgnoreCase(type)) return new Americano(4500);
+        else                                          return new DefaultCoffee();  // 기본값
+    }
 }
 ```
-
-커피테스트
 
 ```java
-public class CoffeeTest {
-
-	public static void main(String[] args) {
-		Coffee latte= CoffeeFactory.getCoffee("Latte");
-		Coffee americano = CoffeeFactory.getCoffee("Americano");
-		Coffee defaultCoffee = CoffeeFactory.getCoffee("awdljahwdl");
-		
-		System.out.println(latte);
-		System.out.println(americano);
-		System.out.println(defaultCoffee);
-	}
-}
-
-이 커피의 가격은:4000
-이 커피의 가격은:4500
-이 커피의 가격은:-1
+// 사용하는 쪽은 '무엇을 만들지'만 전달
+Coffee latte = CoffeeFactory.getCoffee("Latte");        // 4000
+Coffee americano = CoffeeFactory.getCoffee("Americano"); // 4500
+Coffee unknown = CoffeeFactory.getCoffee("xyz");        // -1 (DefaultCoffee)
 ```
 
-이렇게 **객체 생성 부분은 팩토리 클래스**에서 담당하게 됩니다.
+> 💡 이제 라떼·아메리카노 생성 로직이 바뀌어도 **팩토리 한 곳만** 고치면 된다. 사용하는 쪽은 **"어떤 것을 만들지"만 넘기면** 되니 결합도가 낮아진다.
 
-따라서 라떼나 아메리카노를 생성하는 모든 클래스에서 수정할 필요없이 **어떤 것을 만들지만 보내주면 됩니다.**
+> 💡 `DefaultCoffee`로 **잘못된 타입에도 안전하게** 기본값을 반환하는 것도 팩토리의 이점이다.
 
-그런데 이렇게 쓰게 되면 가격이 다른 라떼는 존재할 수 없게 됩니다.
+---
 
-왜냐하면 객체 생성을 주관하는 클래스는 한개이기 때문입니다.
+## 3. 한계와 확장
 
-이 문제를 해결하기 위해서는 **팩토리 자체를 인터페이스나 추상클래스로** 만들어서 각각 개성을 가진 팩토리를 만들 수 있습니다.
+> ⚠️ 위 방식은 **가격이 다른 라떼**를 만들 수 없다. 객체 생성을 주관하는 팩토리가 하나뿐이기 때문. 이를 해결하려면 **팩토리 자체를 인터페이스/추상 클래스로** 만들어, 각각 개성 있는 팩토리(추상 팩토리 패턴)를 둔다.
 
-감사합니다!
+---
+
+## 📝 정리
+
+```
+팩토리 패턴
+├─ 목적    객체 생성 로직을 분리·추상화
+├─ 효과    느슨한 결합 + 유지보수성 (한 곳만 수정)
+├─ 사용    Factory.getXxx(type)로 생성 위임
+└─ 확장    팩토리를 추상화 → 추상 팩토리 패턴
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **팩토리 패턴** | 객체 생성을 전담 클래스에 위임 |
+| **느슨한 결합** | 생성 방식을 몰라도 됨 |
+| **추상 팩토리** | 팩토리 자체를 추상화 |
+
+팩토리 패턴의 핵심은 **"생성 로직을 한곳에 모아 변경에 강하게"**다. 객체 생성 방식이 바뀌어도 팩토리만 수정하면 되니, 유지보수성이 크게 향상된다.

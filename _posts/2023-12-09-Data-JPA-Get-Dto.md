@@ -7,57 +7,36 @@ render_with_liquid: false
 future: true
 ---
 
-# 값과 DTO 가져오기
+## 📌 들어가며
 
-## 값 가져오기
+이번 글에서는 `@Query`로 **특정 값(단일 필드)**과 **DTO**를 조회하는 방법을 정리한다. 엔티티 전체가 아니라 필요한 데이터만 뽑아올 때 유용하다.
 
 ---
 
-**MemberRepository.java**
+## 1. 값 가져오기 (단일 필드)
+
+엔티티가 아니라 특정 컬럼 값만 List로 조회한다.
 
 ```java
 @Query("select m.username from Member m")
-    List<String> findUsernameList();
+List<String> findUsernameList();
 ```
 
-MemberRepositoryTest.java
-
 ```java
-@Test
-    public void findUsernameList(){
-        Member m1 = new Member("AAA", 10);
-        Member m2 = new Member("BBB", 20);
-
-        memberRepository.save(m1);
-        memberRepository.save(m2);
-
-        List<String> result = memberRepository.findUsernameList();
-
-        for(String name: result){
-            System.out.println(name);
-        }
-    }
+List<String> result = memberRepository.findUsernameList();
+// AAA
+// BBB
+```
 
 ---
 
-AAA
-BBB
-```
+## 2. DTO 가져오기
 
-## DTO가져오기
-
----
-
-**MemberDto.java**
+여러 엔티티에서 필요한 값만 골라 **DTO**로 받는다. 먼저 DTO를 만든다.
 
 ```java
-package study.datajpa.dto;
-
-import lombok.Data;
-
 @Data
 public class MemberDto {
-
     private Long id;
     private String username;
     private String teamname;
@@ -70,35 +49,39 @@ public class MemberDto {
 }
 ```
 
-**MemberRepository.java**
+**JPQL의 `new`**로 DTO 경로를 지정해 조회한다.
 
 ```java
-@Query("select new study.datajpa.dto.MemberDto(m.id, m.username, t.name) from Member m join m.team t")
-    List<MemberDto> findMemberDto();
+@Query("select new study.datajpa.dto.MemberDto(m.id, m.username, t.name) " +
+       "from Member m join m.team t")
+List<MemberDto> findMemberDto();
 ```
 
-→ JPQL에서는 new 로 dto의 경로까지 해서 알려준다. 여기서 저 파라미터로 들어간 생성자가 이미 선언되어 있어야한다.
-
-**MemberRepositoryTeat.java**
+> 💡 JPQL에서는 **`new 전체경로.Dto클래스(...)`**로 DTO를 만든다. 이때 파라미터에 맞는 **생성자가 DTO에 미리 선언**되어 있어야 한다.
 
 ```java
-@Test
-    public void findMemberDto(){
-        Team t1 = new Team("teamA");
-        teamRepository.save(t1);
+List<MemberDto> result = memberRepository.findMemberDto();
+// MemberDto(id=1, username=AAA, teamname=teamA)
+```
 
-        Member m1 = new Member("AAA", 10);
-        m1.setTeam(t1);
-        memberRepository.save(m1);
-
-        List<MemberDto> result = memberRepository.findMemberDto();
-
-        for(MemberDto memberDto: result){
-            System.out.println(memberDto);
-        }
-    }
+| 조회 대상 | 방법 |
+|------|------|
+| 단일 값 | `select m.username` → `List<String>` |
+| DTO | `select new 경로.Dto(...)` → `List<Dto>` |
 
 ---
 
-MemberDto(id=1, username=AAA, teamname=teamA)
+## 📝 정리
+
 ```
+값 & DTO 조회
+├─ 값     @Query("select m.필드") → List<타입>
+└─ DTO    @Query("select new 경로.Dto(...)") + 생성자 필요
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **단일 값 조회** | 특정 컬럼만 뽑기 |
+| **DTO 조회** | `new` 문법으로 필요한 값만 조립 |
+
+엔티티 전체가 아니라 **필요한 데이터만** 조회하면 성능과 관심사 분리에 유리하다. DTO 조회 시에는 **JPQL의 `new`**와 **DTO 생성자**가 짝을 이뤄야 한다는 점을 기억하자.

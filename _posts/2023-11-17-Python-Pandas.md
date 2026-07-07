@@ -7,130 +7,133 @@ render_with_liquid: false
 future: true
 ---
 
-이번 시간엔 파이썬의 pandas에 있는 series기능을 이용해보겠습니다~
+## 📌 들어가며
 
-판다스(Pandas) 라이브러리
+이번 글에서는 Pandas의 **Series**를 다룬다.
 
--   Pandas는 데이터 분석을 위한 고수준의 자료구조와 데이터 분석 도구를 제공합니다.
+> **Pandas란?**
+> 데이터 분석을 위한 **고수준의 자료구조와 분석 도구**를 제공하는 라이브러리. 여기서 '고수준'은 데이터를 쉽게 제어·시각화하는 메소드를 뜻한다. 데이터 분석의 필수 모듈이다.
 
--   여기서 고수준이란 사용자가 쉽게 데이터를 제어하고 시각화 할 수 있는 메서드를 의미합니다.
--   판다스는 데이터 분석분야 에서 필수적으로 사용되는 중요한 모듈입니다.
+> **Series**: 인덱스가 붙은 1차원 데이터 구조.
 
-```
+---
+
+## 1. Series 생성
+
+```python
 data = np.array(["가", "나", "다"])
 s = Series(data)
-print(s)
-
->>>0    가
->>>1    나
->>>2    다
->>>dtype: object
+# 0    가
+# 1    나
+# 2    다   (기본 인덱스 0,1,2)
 ```
 
-data를 np.array로 선언한 다음에 series로 만들었습니다.
+**인덱스를 직접 지정**할 수 있다.
 
-```
+```python
 data = [1000, 2000, 3000]
 index = ['메로나', '구구콘', '하겐다즈']
 s = Series(data=data, index=index)
-print(s)
-
->>>메로나     1000
->>>구구콘     2000
->>>하겐다즈    3000
->>>dtype: int64
+# 메로나     1000
+# 구구콘     2000
+# 하겐다즈    3000
 ```
 
-series 옵션으로 data와 index에 우리가 만든 데이터를 넣어줄 수도 있습니다. 아까와 달리 0,1,2 인덱스가 아닌 아이스크림 이름으로 인덱스를 만들었습니다~
+Series의 속성을 확인할 수 있다.
 
-```
-print(s.index)
-print(s.values)
-print(s.dtype)
+| 속성 | 반환 |
+|------|------|
+| `s.index` | 인덱스 |
+| `s.values` | 값 |
+| `s.dtype` | 자료형 |
 
+---
 
->>>Index(['메로나', '구구콘', '하겐다즈'], dtype='object')
->>>[1000 2000 3000]
->>>int64
-```
+## 2. 인덱싱 — loc vs iloc
 
-시리즈 객체의 변수로 우리가 만든 시리즈의 속성을 파악할 수도 있습니다.
+| 방식 | 기준 | 슬라이싱 |
+|------|------|------|
+| `s.loc['메로나']` | **내가 만든 인덱스** | 마지막 **포함** |
+| `s.iloc[0]` | **기본(정수) 인덱스** | 마지막 제외 |
 
-```
-data = [1000, 2000, 3000]
-index = ['메로나', '구구콘', '하겐다즈']
-s = Series(data, index=index)
-
-print(s.loc['메로나']) # 만든 인덱스
-print(s.iloc[  0   ])  # 디폴트 인덱스
-# 인덱싱
-
-
->>>1000
->>>1000
+```python
+s.loc['메로나']   # 1000 (라벨로)
+s.iloc[0]        # 1000 (정수 위치로)
 ```
 
-인덱싱할 때 loc와 iloc가 있습니다. loc는 만든 인덱싱을 입력하여 추출하고 iloc는 리스트의 그 인덱싱과 비슷합니다. 주의할 점은 loc를 슬라이싱 할 때는 iloc와 달리 마지막 부분도 포함해서 추출합니다!
+> ⚠️ `loc`로 슬라이싱하면 `iloc`와 달리 **마지막 요소도 포함**한다.
 
-```
-s1 = Series([10, 20, 30], index = ["가", "나", "다"])
-s2 = Series([20, 30, 40])
+---
 
-s1+s2  # NaN이 나온 이유: index가 맞지 않아서.
+## 3. 인덱스가 다른 Series 연산
 
+```python
+s1 = Series([10, 20, 30], index=["가", "나", "다"])
+s2 = Series([20, 30, 40])   # 인덱스 0,1,2
 
->>>가   NaN
->>>나   NaN
->>>다   NaN
->>>0   NaN
->>>1   NaN
->>>2   NaN
->>>dtype: float64
+s1 + s2   # 전부 NaN!
 ```
 
-인덱스가 다른 두 series를 +연산을 하면 각자 원래의 원소에 Nan값을 더해서 nan이 되고 결국 전체가 nan으로 출력됩니다. 참고로 nan은 float타입입니다!
+> 💡 Series 연산은 **인덱스를 기준으로 정렬**해서 계산한다. 인덱스가 맞지 않으면 짝이 없어 **NaN**(float 타입)이 된다.
 
+---
+
+## 4. 조건(불리언) 인덱싱
+
+```python
+lge = Series([93000, 82400, 99100, 81000, 72300],
+             index=["05/27", "05/28", "05/29", "05/30", "05/31"])
+
+lge.index[lge.values < 85000]
+# >>> Index(['05/28', '05/30', '05/31'])   → 종가 85000 미만 날짜
 ```
-lge = Series([93000, 82400, 99100, 81000, 72300], index = ["05/27", "05/28", "05/29", "05/30", "05/31"])
 
-print(lge.index[ lge.values<85000])
+> 💡 `values < 85000`은 각 데이터에 조건을 대입해 **True/False Series**를 만든다. 이를 인덱싱에 넣으면 **True인 것만** 추출된다. (LG전자 종가에서 85000 미만인 날짜)
 
+---
 
->>>Index(['05/28', '05/30', '05/31'], dtype='object')
-```
+## 번외 — 비트코인·리플 상관관계 회귀
 
-저렇게 원하는 인덱스에 조건문을 달면 전체 data를 조건에 대입하여 True와 False가 각각 대응하는 리스트로 만들어줍니다. 그것을 인덱싱하면 True인 값만 추출됩니다. 위는 lg전자의 종가를 data로 그 날짜를 index로 설정한 series입니다. 따라서 저 출력문은 종가가 85000미만인 날짜를 출력합니다~
+두 코인 가격의 관계를 **역행렬(최소제곱)**로 일차함수로 도출한다.
 
-번외) 비트코인과 리플의 가격 상관관계를 역행렬로 일반함수를 도출해보기!
+```python
+btc_re = btc['close'].values[-1000:].reshape(-1, 1)
+xrp_re = xrp['close'].values[-1000:].reshape(-1, 1)
 
-```
-import pybithumb
-btc = pybithumb.get_candlestick("BTC")
-xrp = pybithumb.get_candlestick("XRP")
-
-plt.scatter(btc["close"][-1000:],xrp["close"][-1000:])
-
-btc_re = btc['close'].values[-1000:].reshape(-1 ,1)
-xrp_re = xrp['close'].values[-1000:].reshape( -1,1)
-
-o = np.ones( (1000,1), dtype=np.uint32)
-btc_o= np.hstack( (btc_re,o))
-btc_o_t = np.linalg.pinv(btc_o)
+o = np.ones((1000, 1), dtype=np.uint32)
+btc_o = np.hstack((btc_re, o))
+btc_o_t = np.linalg.pinv(btc_o)   # 유사 역행렬
 
 result = btc_o_t @ xrp_re
-a = result[0,0]
-b = result[1,0]
-
-plt.scatter(btc["close"][-1000:],xrp["close"][-1000:])
+a, b = result[0, 0], result[1, 0]   # 기울기, 절편
 
 x = btc['close'].values[-1000:]
-y = a*x +b  # 회귀
-
-plt.plot(x,y,color="r")
+y = a * x + b                        # 회귀선
+plt.plot(x, y, color="r")
 ```
 
 ![Desktop View](/assets/img/Programming-Language/Python/Pandas/1.png)
 
-x축을 비트코인 y축을 리플로 잡아서 비트코인을 대입했을 때 대응되는 값을 일반함수로 표현하고 그래프로 그려봤습니다 ㅎㅎ
+x축을 비트코인, y축을 리플로 두고 대응값을 일차함수로 표현해 회귀선을 그렸다.
 
-이번시간엔 여기까지 하겠습니다!
+---
+
+## 📝 정리
+
+```
+Pandas Series
+├─ 생성    Series(data, index=...)
+├─ 속성    index / values / dtype
+├─ 인덱싱  loc(라벨, 끝 포함) vs iloc(정수)
+├─ 연산    인덱스 기준 정렬, 안 맞으면 NaN
+└─ 조건    values<n → True/False → 필터링
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Series** | 인덱스가 붙은 1차원 데이터 |
+| **loc / iloc** | 라벨 인덱싱 / 정수 인덱싱 |
+| **불리언 인덱싱** | 조건으로 데이터 필터 |
+| **NaN** | 인덱스 불일치 시 결측값 |
+
+Series의 핵심은 **"인덱스가 붙은 데이터"**라는 점이다. 그래서 연산이 인덱스 기준으로 이뤄지고, 조건 인덱싱으로 원하는 데이터를 손쉽게 걸러낼 수 있다. 다음엔 2차원인 DataFrame을 다룬다.

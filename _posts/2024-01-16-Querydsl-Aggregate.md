@@ -7,78 +7,81 @@ render_with_liquid: false
 future: true
 ---
 
-# **QueryDSL - 집계 함수: 데이터를 효과적으로 분석하자!**
+## 📌 들어가며
 
-안녕하세요! 오늘은 QueryDSL에서 제공하는 집계 함수에 대해 알아보겠습니다. 집계 함수는 데이터를 분석하고 통계 내는 데에 필수적인 기능 중 하나입니다. QueryDSL은 다양한 집계 함수를 제공하여 데이터를 효과적으로 다룰 수 있습니다. 함께 예시 코드와 함께 살펴보도록 하겠습니다.
+이번 글에서는 QueryDSL의 **집계 함수**를 정리한다.
 
-## ✅**집계 함수란?**
-
----
-
-집계 함수는 여러 행의 데이터를 하나로 합치거나 특정 조건에 따라 데이터를 계산하는 함수입니다. QueryDSL에서는 다양한 집계 함수를 지원하여 데이터를 효과적으로 처리할 수 있습니다.
-
-## ✅**`count` 함수 사용하기**
+> **집계 함수란?** 여러 행의 데이터를 하나로 합치거나, 조건에 따라 계산하는 함수. 데이터 분석·통계에 필수다.
 
 ---
 
-**`count`** 함수는 특정 조건에 맞는 데이터의 개수를 세는 데에 사용됩니다.
-
-### **예시 코드**
+## 1. count
 
 ```java
-
-long productCount = new JPAQueryFactory(entityManager)
+long productCount = queryFactory
     .selectFrom(product)
     .where(product.price.gt(1000))
-    .fetchCount();
-
+    .fetchCount();   // 조건에 맞는 개수
 ```
-
-위 코드에서 **`product.price.gt(1000)`**은 가격이 1000 이상인 제품의 개수를 세는 조건이며, **`fetchCount()`**를 통해 개수를 가져옵니다.
-
-## ✅**`sum`, `avg`, `min`, `max` 함수 사용하기**
 
 ---
 
-수량, 가격 등의 숫자형 데이터에 대한 합계, 평균, 최솟값, 최댓값을 계산할 수 있습니다.
+## 2. sum · avg · min · max
 
-### **예시 코드**
+숫자형 데이터의 합계·평균·최소·최대를 계산한다.
 
 ```java
-
-BigDecimal totalAmount = new JPAQueryFactory(entityManager)
-    .select(product.amount.sum())
+BigDecimal totalAmount = queryFactory
+    .select(product.amount.sum())   // 합계
     .from(product)
     .fetchOne();
-
 ```
 
-위 코드에서 **`product.amount.sum()`**은 수량(amount)의 합계를 계산합니다.
-
-## ✅**`groupBy`와 함께 사용하기**
+| 함수 | 역할 |
+|:---:|------|
+| `.sum()` | 합계 |
+| `.avg()` | 평균 |
+| `.min()` / `.max()` | 최소 / 최대 |
+| `.count()` / `fetchCount()` | 개수 |
 
 ---
 
-**`groupBy`** 함수를 사용하면 특정 기준에 따라 데이터를 그룹핑하고 집계 함수를 적용할 수 있습니다.
+## 3. groupBy와 함께
 
-### **예시 코드**
+특정 기준으로 그룹핑한 뒤 집계한다. 여러 컬럼을 선택하면 **Tuple**로 받는다.
 
 ```java
-
-List<Tuple> result = new JPAQueryFactory(entityManager)
-    .select(product.category, product.price.avg())
+List<Tuple> result = queryFactory
+    .select(product.category, product.price.avg())   // 카테고리, 평균 가격
     .from(product)
-    .groupBy(product.category)
+    .groupBy(product.category)                        // 카테고리별
     .fetch();
-
 ```
 
-위 코드에서는 카테고리별로 가격의 평균을 계산합니다.
-
-## 📌**주의사항과 팁**
+> 💡 여러 값을 select하면 엔티티가 아니라 **`Tuple`**로 반환된다. `tuple.get(product.category)`처럼 꺼낸다.
 
 ---
 
-- 집계 함수는 데이터베이스에서 계산되므로, 데이터 양이 많을 경우 성능에 영향을 줄 수 있습니다. 특히 **`groupBy`**를 사용할 때는 주의가 필요합니다.
-- 집계 함수를 사용할 때는 필요한 데이터만을 선택하여 최적화된 쿼리를 작성하는 것이 중요합니다.
-- **`groupBy`** 함수를 사용할 때는 그룹별로 어떤 데이터를 가져올지 명확하게 정의해야 합니다.
+## 📌 주의사항과 팁
+
+> ⚠️ 집계는 DB에서 계산되므로, 데이터가 많으면 **성능에 영향**을 준다. 특히 `groupBy`는 그룹별로 무엇을 가져올지 명확히 정의해야 한다.
+
+---
+
+## 📝 정리
+
+```
+QueryDSL 집계
+├─ count   fetchCount() / .count()
+├─ 통계    sum/avg/min/max
+├─ 그룹    groupBy(컬럼) → Tuple로 반환
+└─ 주의    데이터 많으면 성능 고려
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **집계 함수** | 여러 행을 하나로 계산 |
+| **groupBy** | 기준별 그룹핑 후 집계 |
+| **Tuple** | 여러 값 조회 결과 |
+
+집계 함수는 SQL의 `SUM`/`AVG`/`GROUP BY`를 타입 안전하게 표현한 것이다. 여러 값을 select하면 `Tuple`로 받는다는 점, groupBy는 성능에 유의해야 한다는 점을 기억하자.
