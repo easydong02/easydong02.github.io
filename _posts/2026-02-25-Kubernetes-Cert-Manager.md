@@ -4,146 +4,65 @@ date: 2026-02-25 00:00:00 +0900
 categories: [Infra, Kubernetes]
 tags: [kubernetes, cert-manager, tls, certificate, lets-encrypt, acme, ingress, issuer, clusterissuer, private-ca]
 render_with_liquid: false
+mermaid: true
 ---
 
-# cert-manager
+## 📌 들어가며
 
-## 1. 개요
+이번 글에서는 쿠버네티스에서 **TLS 인증서를 자동 발급·갱신·관리**하는 **cert-manager**를 정리한다. Let's Encrypt 무료 인증서부터 와일드카드(DNS-01), 내부 Private CA(폐쇄망)까지, 그리고 만료 걱정 없는 자동 갱신 메커니즘을 다룬다.
 
-**한 줄 요약**: Kubernetes에서 TLS 인증서를 자동으로 발급, 갱신, 관리하는 인증서 관리 시스템
+> **cert-manager란?** Certificate 리소스를 선언하면 **Issuer를 통해 인증서를 발급하고 Secret에 저장**하는 인증서 관리 시스템. Let's Encrypt로 무료 SSL을 받고, **만료 30일 전 자동 갱신**해 인증서 만료 장애를 원천 차단한다.
 
-**언제 사용하나**:
-- Ingress에 HTTPS/TLS 적용 시 인증서 자동 발급
-- Let's Encrypt로 무료 SSL 인증서 자동 갱신
-- 내부 Private CA로 자체 서명 인증서 발급
-- 인증서 만료 전 자동 갱신으로 장애 방지
-
-### 인증서 발급 전체 흐름
-
-```
-Certificate 리소스 생성
-  → Issuer/ClusterIssuer 참조
-  → ACME Challenge 수행
-  → 인증서 발급
-  → Secret 저장 (tls.crt, tls.key)
-  → Ingress에서 Secret 참조하여 HTTPS 적용
+```mermaid
+flowchart LR
+    C["Certificate"] --> I["Issuer/ClusterIssuer"]
+    I --> Ch["ACME Challenge<br/>(도메인 소유 증명)"]
+    Ch --> Sec[("Secret<br/>tls.crt·tls.key")]
+    Sec --> Ing["Ingress HTTPS"]
 ```
 
 ---
 
-## 2. 핵심 개념
-
-### 2.1. 주요 구성 요소
+## 1. 핵심 구성 요소
 
 | 리소스 | 역할 |
 |--------|------|
-| **Certificate** | 인증서 요청 리소스 — 어떤 도메인의 인증서가 필요한지 정의 |
-| **Issuer** | 네임스페이스 범위의 인증서 발급자 |
-| **ClusterIssuer** | 클러스터 전체 범위의 인증서 발급자 |
-| **Secret** | 발급된 인증서 저장 (`tls.crt`, `tls.key`) |
-| **CertificateRequest** | Certificate → Issuer 간 인증서 요청 중간 리소스 |
-| **Challenge** | ACME 프로토콜의 도메인 소유 증명 방식 |
+| **Certificate** | "어떤 도메인 인증서가 필요한지" 요청 |
+| **Issuer** | 네임스페이스 범위 발급자 |
+| **ClusterIssuer** | 클러스터 전체 발급자 |
+| **Secret** | 발급된 인증서 저장(`tls.crt`·`tls.key`) |
+| **Challenge** | ACME 도메인 소유 증명 |
 
-### 2.2. Issuer vs ClusterIssuer
+### ACME Challenge 방식
 
-| 항목 | Issuer | ClusterIssuer |
-|------|--------|---------------|
-| **범위** | 특정 네임스페이스 | 클러스터 전체 |
-| **사용 시기** | 네임스페이스별 독립 관리 | 여러 네임스페이스에서 공통 사용 |
-| **예시** | 개발팀별 Let's Encrypt 계정 | 회사 공통 CA 인증서 |
+| 방식 | 증명 | 와일드카드 | 사용 |
+|------|------|:---:|------|
+| **HTTP-01** | `/.well-known/acme-challenge/` 파일 | ❌ | 단일 도메인(80 포트 필요) |
+| **DNS-01** | DNS TXT 레코드 | ✅ | 와일드카드(DNS API 필요) |
 
-### 2.3. ACME Challenge 방식 비교
-
-| 방식 | 설명 | 장점 | 단점 | 사용 시기 |
-|------|------|------|------|-----------|
-| **HTTP-01** | `http://<domain>/.well-known/acme-challenge/` 경로에 파일 생성 | 간단, DNS 설정 불필요 | 80 포트 필요, 와일드카드 불가 | 단일 도메인 |
-| **DNS-01** | DNS TXT 레코드 추가로 도메인 소유 증명 | 와일드카드 가능, 80/443 불필요 | DNS 제공자 API 필요 | 와일드카드 인증서 |
-
-### 2.4. 주요 특징
-
-- **자동 갱신**: 인증서 만료 30일 전 자동 갱신 시도, 실패 시 매일 재시도
-- **다양한 Issuer 지원**: Let's Encrypt, Vault, Venafi, Self-signed
-- **선언적 관리**: YAML로 인증서 요청 정의
+> 💡 **와일드카드(`*.example.com`)는 DNS-01만 가능**하다. HTTP-01은 도메인마다 파일을 놓아야 해서 와일드카드를 증명할 수 없다. 반면 DNS-01은 TXT 레코드로 도메인 소유를 증명하므로 80/443 포트도 필요 없다.
 
 ---
 
-## 3. 기본 명령어
+## 2. 기본 명령어
 
 ```bash
-# cert-manager Pod 3개 실행 확인
-# (cert-manager, cert-manager-webhook, cert-manager-cainjector)
-kubectl get pods -n cert-manager
-
-# ClusterIssuer / Issuer 확인
-kubectl get clusterissuer
-kubectl get issuer -n <namespace>
-
-# Certificate 확인 (READY 상태 확인)
-kubectl get certificate -n <namespace>
-
-# Certificate 상세 정보 (Events에서 에러 확인)
-kubectl describe certificate <cert-name> -n <namespace>
-
-# 인증서 발급 진행 상태 확인
-kubectl get certificaterequest -n <namespace>
-
-# ACME Challenge 확인 (발급 중일 때)
-kubectl get challenge -n <namespace>
-
-# 발급된 인증서 Secret 확인
-kubectl get secret <tls-secret-name> -n <namespace>
-
-# 인증서 내용 확인 (만료일 등)
-kubectl get secret <tls-secret-name> -n <namespace> \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -text -noout
-
-# cert-manager 로그 확인
-kubectl logs -n cert-manager deploy/cert-manager -f
-```
-
-**Certificate 상태 출력 예시**:
-
-```
-NAME                    READY   SECRET           AGE
-app-example-com-tls     True    app-tls-secret   5d
-
-# describe 출력
-Status:
-  Conditions:
-    Status:      True
-    Type:        Ready
-  Not After:     2024-03-06T12:00:00Z   ← 만료일
-  Not Before:    2024-12-06T12:00:00Z
-  Renewal Time:  2024-02-05T12:00:00Z   ← 갱신 시작 시간
+kubectl get pods -n cert-manager          # 3개 Pod(controller/webhook/cainjector)
+kubectl get clusterissuer                 # 발급자 READY 확인
+kubectl get certificate -n <ns>           # 인증서 READY 확인
+kubectl describe certificate <cert> -n <ns>   # 실패 시 Events
+kubectl get challenge -n <ns>             # 발급 중 Challenge 상태
 ```
 
 ---
 
-## 4. 실무 패턴
-
-### 4.1. cert-manager 설치
+## 3. 설치 & Let's Encrypt Issuer
 
 ```bash
-# Helm으로 설치 (권장)
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-
-# CRD 먼저 설치
+helm repo add jetstack https://charts.jetstack.io && helm repo update
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.crds.yaml
-
-# cert-manager 설치
-helm install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --create-namespace \
-  --version v1.13.0
-
-# 설치 확인
-kubectl get pods -n cert-manager
+helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --version v1.13.0
 ```
-
-### 4.2. Let's Encrypt ClusterIssuer
-
-**프로덕션용**:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -159,46 +78,29 @@ spec:
     solvers:
     - http01:
         ingress:
-          class: traefik  # HyperCloud 환경
-```
-
-**테스트용 Staging** (Rate Limit 없음, 브라우저 신뢰 X):
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-staging
-spec:
-  acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@example.com
-    privateKeySecretRef:
-      name: letsencrypt-staging
-    solvers:
-    - http01:
-        ingress:
           class: traefik
 ```
 
-> **Staging 먼저 테스트 필수**: Production은 주당 50개/도메인 Rate Limit이 있습니다.
+> ⚠️ **반드시 Staging으로 먼저 테스트**하자. Production은 **주당 도메인 50개** Rate Limit이 있어, 설정 실수로 반복 요청하면 금방 막힌다. `acme-staging-v02...` 서버로 검증 후 prod로 전환한다.
 
-### 4.3. Ingress에 자동 인증서 발급 (annotation 방식)
+---
+
+## 4. Ingress 자동 발급 (annotation)
+
+Ingress에 **annotation 한 줄**만 붙이면 cert-manager가 Certificate를 자동 생성한다.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: app-ingress
-  namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # 자동 Certificate 생성
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"   # ← 자동 발급 트리거
 spec:
   tls:
-  - hosts:
-    - app.example.com
-    secretName: app-tls-secret   # 인증서가 저장될 Secret 이름
+  - hosts: [app.example.com]
+    secretName: app-tls-secret
   rules:
   - host: app.example.com
     http:
@@ -206,365 +108,113 @@ spec:
       - path: /
         pathType: Prefix
         backend:
-          service:
-            name: app-service
-            port:
-              number: 8080
+          service: {name: app-service, port: {number: 8080}}
 ```
 
-**동작 과정**:
-
 ```
-1. Ingress 생성 → cert-manager가 annotation 감지
-2. Certificate 리소스 자동 생성
-3. Let's Encrypt에 인증서 요청
-4. HTTP-01 Challenge 수행 (임시 Ingress 생성)
-5. 인증서 발급 → app-tls-secret에 저장
-6. Ingress가 Secret 참조하여 HTTPS 적용
+Ingress 생성 → annotation 감지 → Certificate 자동 생성 → Let's Encrypt 요청
+→ HTTP-01 Challenge(임시 Ingress) → 발급 → app-tls-secret 저장 → HTTPS 적용
 ```
 
-### 4.4. Certificate 리소스 직접 생성
+> ⚠️ annotation 오타 주의 — **ClusterIssuer면 `cert-manager.io/cluster-issuer`**, Issuer면 `cert-manager.io/issuer`다. 이걸 헷갈리면 "issuer not found"로 발급이 안 된다.
+
+---
+
+## 5. 와일드카드 & Private CA
+
+### 와일드카드 (DNS-01 + Route53)
 
 ```yaml
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: app-certificate
-  namespace: default
-spec:
-  secretName: app-tls-secret       # 인증서가 저장될 Secret 이름
-  issuerRef:
-    name: letsencrypt-prod
-    kind: ClusterIssuer
-  dnsNames:
-  - app.example.com
-  - www.app.example.com
-  duration: 2160h                  # 90일 (Let's Encrypt 기본)
-  renewBefore: 720h                # 만료 30일 전부터 갱신 시도
-```
-
-```bash
-# 적용 후 확인
-kubectl get certificate app-certificate -n default
-# READY: True → 발급 완료
-
-kubectl get secret app-tls-secret -n default
-```
-
-### 4.5. 와일드카드 인증서 (DNS-01 Challenge)
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-dns
 spec:
   acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@example.com
-    privateKeySecretRef:
-      name: letsencrypt-dns
     solvers:
     - dns01:
         route53:
           region: ap-northeast-2
-          accessKeyID: AKIAIOSFODNN7EXAMPLE
+          accessKeyID: AKIA...
           secretAccessKeySecretRef:
             name: route53-credentials
             key: secret-access-key
 ---
-apiVersion: cert-manager.io/v1
 kind: Certificate
-metadata:
-  name: wildcard-certificate
-  namespace: default
 spec:
-  secretName: wildcard-tls-secret
-  issuerRef:
-    name: letsencrypt-dns
-    kind: ClusterIssuer
   dnsNames:
-  - "*.example.com"   # 와일드카드
-  - "example.com"     # 루트 도메인
+  - "*.example.com"    # 와일드카드
+  - "example.com"
 ```
 
-```bash
-# Route53 자격 증명 Secret 생성
-kubectl create secret generic route53-credentials \
-  --from-literal=secret-access-key=<AWS_SECRET_ACCESS_KEY> \
-  -n cert-manager
-```
+### Private CA (금융권 폐쇄망)
 
-### 4.6. Self-signed 인증서 (개발/테스트)
+Let's Encrypt를 못 쓰는 폐쇄망에서는 **Self-signed Root CA → CA Issuer → 내부 인증서** 순으로 자체 CA를 구축한다.
 
 ```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned-issuer
-spec:
-  selfSigned: {}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: dev-certificate
-  namespace: default
-spec:
-  secretName: dev-tls-secret
-  issuerRef:
-    name: selfsigned-issuer
-    kind: ClusterIssuer
-  dnsNames:
-  - dev.example.local
-  - "*.dev.example.local"
-```
-
-외부 CA 없이 즉시 발급되지만, 브라우저에서 "신뢰할 수 없는 인증서" 경고가 발생하므로 개발 환경에서만 사용합니다.
-
-### 4.7. 내부 Private CA (금융권 폐쇄망 환경)
-
-```yaml
-# 1. Self-signed Root CA 생성
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned-issuer
-spec:
-  selfSigned: {}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: my-ca
-  namespace: cert-manager
-spec:
-  secretName: my-ca-secret
-  isCA: true                  # CA 인증서로 설정
-  issuerRef:
-    name: selfsigned-issuer
-    kind: ClusterIssuer
-  commonName: "My Internal CA"
-  dnsNames:
-  - "My Internal CA"
----
-# 2. Private CA를 Issuer로 등록
-apiVersion: cert-manager.io/v1
+# ① Self-signed로 Root CA 생성 → ② CA Issuer 등록 → ③ 내부 서비스 인증서 발급
 kind: ClusterIssuer
 metadata:
   name: my-ca-issuer
 spec:
   ca:
     secretName: my-ca-secret
----
-# 3. Private CA로 내부 서비스 인증서 발급
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: internal-app-cert
-  namespace: default
-spec:
-  secretName: internal-app-tls
-  issuerRef:
-    name: my-ca-issuer
-    kind: ClusterIssuer
-  dnsNames:
-  - internal-app.company.local
 ```
 
-**금융권 폐쇄망 보안 정책**:
-- Let's Encrypt 사용 불가 시 내부 CA 구축
-- 인증서 만료 알림 설정 (Prometheus Alert)
-- 인증서 Secret 접근 권한 최소화 (RBAC)
+> 💡 **Self-signed vs Private CA** — Self-signed는 서비스마다 개별 자체 서명(브라우저 경고), Private CA는 하나의 내부 CA로 여러 인증서를 발급해 **CA만 신뢰하면 하위 인증서가 모두 신뢰**된다. 폐쇄망에서는 Private CA가 정석이다.
 
 ---
 
-## 5. 트러블슈팅
-
-### 5.1. 실무 디버깅 순서
+## 6. 트러블슈팅 & 흔한 실수
 
 ```bash
-# Step 1: Certificate 상태 확인
-kubectl get certificate app-certificate -n default
-# READY: False → 문제 있음
-
-# Step 2: Events 확인 (에러 메시지 확인)
-kubectl describe certificate app-certificate -n default
-# Events:
-#   Warning  Failed  Issuer not found
-
-# Step 3: ClusterIssuer 상태 확인
-kubectl get clusterissuer letsencrypt-prod
-# READY: True 확인
-
-# Step 4: CertificateRequest 확인
-kubectl get certificaterequest -n default
-kubectl describe certificaterequest <n> -n default
-
-# Step 5: Challenge 확인 (발급 진행 중)
-kubectl get challenge -n default
-# State: pending → 진행 중
-# State: valid   → 성공
-
-# Step 6: 임시 Ingress 확인 (HTTP-01)
-kubectl get ingress -n default
-# cm-acme-http-solver-xxx 임시 Ingress 생성 여부 확인
-
-# Step 7: 도메인 접근 테스트
-curl -v http://app.example.com/.well-known/acme-challenge/
-
-# Step 8: cert-manager 로그
-kubectl logs -n cert-manager deploy/cert-manager -f
+kubectl get certificate <cert> -n <ns>              # READY: False?
+kubectl describe certificate <cert> -n <ns>         # Events 에러
+kubectl get clusterissuer <issuer>                  # 발급자 READY?
+kubectl get challenge -n <ns>                       # pending/valid?
+curl -v http://app.example.com/.well-known/acme-challenge/test   # HTTP-01 도달?
 ```
 
-### 5.2. 추가 디버깅 명령어
-
-```bash
-# ACME Challenge 수동 테스트 (HTTP-01)
-curl -v http://app.example.com/.well-known/acme-challenge/test
-# 200 OK 응답 확인
-
-# 인증서 재발급 강제 실행
-kubectl delete certificaterequest <request-name> -n <namespace>
-kubectl delete secret <tls-secret-name> -n <namespace>
-# Certificate가 자동으로 재요청
-
-# Let's Encrypt Rate Limit 확인
-# https://crt.sh/?q=example.com 에서 최근 발급 내역 조회
-
-# DNS-01 Challenge TXT 레코드 확인
-dig app.example.com TXT
-# _acme-challenge.app.example.com TXT 레코드 확인
-
-# cert-manager webhook 확인
-kubectl get validatingwebhookconfigurations
-kubectl get mutatingwebhookconfigurations
-# cert-manager-webhook이 있어야 함
-```
-
-### 5.3. 흔한 실수 7가지
-
-**1. ClusterIssuer 생성 전 Certificate 생성**
-
-```
-❌ ClusterIssuer: letsencrypt-prod 없음
-   Certificate에서 참조
-→ Error: issuer not found
-
-✅ ClusterIssuer 먼저 생성 후 Certificate 생성
-```
-
-**2. HTTP-01 Challenge 실패 (80 포트 접근 불가)**
-
-```
-❌ Ingress Controller가 80 포트 리스닝 안 함
-   방화벽에서 80 포트 차단
-→ Challenge 실패, 인증서 발급 안 됨
-
-✅ 80 포트 외부 접근 가능하도록 설정
-   또는 DNS-01 Challenge로 변경
-```
-
-**3. Let's Encrypt Rate Limit 초과**
-
-```
-❌ 동일 도메인으로 1시간에 5회 이상 요청
-→ Error: too many failed authorizations recently
-
-✅ Staging 환경에서 먼저 테스트
-   letsencrypt-staging 사용 후 prod로 전환
-```
-
-**4. Ingress annotation 오타**
-
-```
-❌ cert-manager.io/issuer: "letsencrypt-prod"
-   (ClusterIssuer인데 cluster-issuer 대신 issuer 사용)
-
-✅ cert-manager.io/cluster-issuer: "letsencrypt-prod"
-```
-
-**5. 도메인 DNS가 Ingress를 가리키지 않음**
-
-```
-❌ app.example.com → DNS 미설정 또는 잘못된 IP
-→ HTTP-01 Challenge 실패
-
-✅ 도메인 DNS A 레코드 확인
-   nslookup app.example.com
-   # Ingress Controller IP와 일치해야 함
-```
-
-**6. 인증서 갱신 실패**
-
-```
-❌ 갱신 시도 중 Challenge 실패
-   cert-manager Pod 장애
-→ HTTPS 접속 불가
-
-✅ renewBefore: 720h (30일) 권장
-   cert-manager 로그 모니터링
-```
-
-**7. 여러 Ingress가 동일 도메인 사용**
-
-```
-❌ Ingress A: app.example.com
-   Ingress B: app.example.com
-→ 인증서 충돌, Challenge 실패
-
-✅ 하나의 Ingress로 통합 또는 다른 도메인 사용
-```
+> ⚠️ **흔한 실수** — ① ClusterIssuer 없이 Certificate 생성(issuer not found), ② HTTP-01인데 **80 포트 차단**(Challenge 실패), ③ Rate Limit 초과(Staging 미사용), ④ annotation `issuer`/`cluster-issuer` 혼동, ⑤ **도메인 DNS가 Ingress를 안 가리킴**, ⑥ TLS Secret이 다른 네임스페이스, ⑦ 여러 Ingress가 같은 도메인 사용(충돌).
 
 ---
 
-## 6. 운영 참고사항
+## 7. 운영 참고
 
-### 자동 갱신 타이밍
-
-- Let's Encrypt: 90일 유효, **30일 전부터** 갱신 시도
-- `renewBefore: 720h` (30일) 권장
-- 갱신 실패 시 매일 재시도
-
-### Staging vs Production
-
-| 항목 | Staging | Production |
-|------|---------|------------|
-| **용도** | 테스트 | 실서비스 |
-| **Rate Limit** | 없음 | 주당 50개/도메인 |
-| **브라우저 신뢰** | X | O |
-
-### 와일드카드 제약
-
-- HTTP-01 Challenge는 와일드카드 불가
-- DNS-01 Challenge만 와일드카드 지원 (DNS 제공자 API 키 필요)
-
-### 인증서 만료 모니터링 (Prometheus Alert)
+| 항목 | 값/권장 |
+|------|------|
+| 유효기간(Let's Encrypt) | 90일 |
+| 갱신 시점 | 만료 **30일 전**(`renewBefore: 720h`) |
+| 갱신 실패 | 매일 재시도 |
+| 와일드카드 | DNS-01만 |
 
 ```promql
-# 7일 이내 만료 예정 인증서 알림
+# 7일 내 만료 알림
 certmanager_certificate_expiration_timestamp_seconds - time() < 604800
 ```
 
-### 인증서 백업
-
-```bash
-kubectl get secret app-tls-secret -n default -o yaml > backup-$(date +%Y%m%d).yaml
-```
-
-### cert-manager 업그레이드 시
-
-CRD를 먼저 업그레이드해야 하며, 기존 Certificate 리소스는 자동 마이그레이션되어 유지됩니다.
-
-### HyperCloud 환경 참고
-
-- cert-manager는 HyperCloud 기본 포함 패키지가 아니므로 **별도 설치 필요**
-- K8s 1.21 환경: cert-manager **v1.5+** 권장
-- API 버전: `cert-manager.io/v1` 사용 (v1.0+ 기준)
+HyperCloud는 cert-manager를 기본 포함하지 않아 별도 설치가 필요하며(K8s 1.21은 v1.5+ 권장), 폐쇄망은 Private CA + 만료 알림 + Secret RBAC 최소화를 적용한다.
 
 ---
 
-## 참고 자료
+## 📝 정리
 
-- cert-manager 공식 문서: <https://cert-manager.io/docs/>
-- Let's Encrypt 공식 문서: <https://letsencrypt.org/docs/>
+```
+cert-manager
+├─ 개념   TLS 인증서 자동 발급·저장(Secret)·갱신
+├─ 발급자 Issuer(NS) / ClusterIssuer(전체)
+├─ Challenge HTTP-01(단일) / DNS-01(와일드카드)
+├─ 사용   Ingress annotation → 자동 Certificate
+└─ 갱신   만료 30일 전 자동(장애 방지)
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **cert-manager** | TLS 자동 관리 시스템 |
+| **ClusterIssuer** | 클러스터 인증서 발급자 |
+| **HTTP-01/DNS-01** | 파일/DNS 소유 증명 |
+
+cert-manager의 핵심은 **Ingress에 annotation 한 줄로 HTTPS를 자동화**하고, **만료 전 자동 갱신**으로 인증서 장애를 없애는 것이다. 와일드카드는 DNS-01, 폐쇄망은 Private CA로 대응하며, 반드시 Staging으로 먼저 검증한다.
+
+---
+
+## 🔗 참고
+
+- [cert-manager 공식 문서](https://cert-manager.io/docs/)
+- [Let's Encrypt 공식 문서](https://letsencrypt.org/docs/)

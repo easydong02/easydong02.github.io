@@ -4,38 +4,52 @@ date: 2024-09-03 00:00:00 +0900
 categories: [Infra, Docker]
 tags: [docker, cicd, jenkins, container]
 render_with_liquid: false
+mermaid: true
 ---
 
-## ✅컨테이너 배포 자동화: AWS 서비스 기반 3-Tier CI/CD MSA 구축
+## 📌 들어가며
 
-이전 포스팅에서는 VM 기반 환경에서 3-Tier 컨테이너 애플리케이션의 CI/CD를 구성해보았습니다. 이번에는 AWS 서비스를 활용하여 좀 더 확장성 있고 안정적인 CI/CD 환경을 구축하는 방법을 알아보겠습니다. AWS CodeCommit, SNS, SQS, ECR 등 다양한 서비스를 활용하여 3-Tier 컨테이너 애플리케이션의 배포를 자동화하는 방법을 단계별로 살펴보겠습니다.
+이번 글에서는 **AWS 서비스 기반 3-Tier CI/CD 파이프라인**을 구축한다. **Jenkins + CodeCommit + SNS/SQS + ECR**를 엮어, 코드를 푸시하면 자동으로 이미지가 빌드되어 ECR에 배포되는 흐름을 만든다.
 
-### ☑️1단계: AWS Cloud9 환경에 Jenkins 설치하기
+> **목표 파이프라인** 개발자가 CodeCommit에 코드를 푸시하면 → 이벤트가 감지되어 Jenkins가 트리거되고 → Jenkins가 이미지를 **빌드·태그·push(ECR)**한다. 수동 배포 없이 **"푸시 = 배포"**를 실현한다.
 
-AWS Cloud9은 클라우드 기반 통합 개발 환경(IDE)으로, 코드 작성, 실행, 디버깅 등 개발에 필요한 모든 기능을 제공합니다. 먼저 Cloud9 환경에 Jenkins를 설치하여 CI/CD 파이프라인을 구축할 준비를 해 보겠습니다.
+---
 
-- **Dockerfile 및 docker-compose.yaml 파일 생성**
+## 1. 전체 아키텍처
 
-Dockerfile
+```mermaid
+flowchart LR
+    Dev(("👨‍💻 개발자"))
+    CC[("📁 CodeCommit")]
+    SNS["📢 SNS"]
+    SQS["📥 SQS"]
+    Jenkins["🔧 Jenkins<br/>(Cloud9 EC2)"]
+    ECR[("📦 ECR")]
+    Dev -- push --> CC
+    CC -- 트리거 --> SNS --> SQS
+    SQS -.감지.-> Jenkins
+    Jenkins -- build·tag·push --> ECR
+```
 
-`FROM jenkins/jenkins:lts
+---
+
+## 2. 1단계 — Cloud9에 Jenkins 설치
+
+Dockerfile로 **도커까지 포함된 Jenkins 이미지**를 만들고, Compose로 실행한다.
+
+```dockerfile
+FROM jenkins/jenkins:lts
 USER root
 RUN apt-get update && \
-apt-get -y install apt-transport-https \
-ca-certificates \
-curl \
-gnupg2 \
-zip \
-unzip \
-software-properties-common && \
-curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
-apt-get update && \
-apt-get -y install docker-ce`
+    apt-get -y install apt-transport-https ca-certificates curl gnupg2 zip unzip software-properties-common && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
+    apt-get update && \
+    apt-get -y install docker-ce
+```
 
-YAML
-
-`version: '3.3'
+```yaml
+version: '3.3'
 services:
   jenkins:
     build:
@@ -48,79 +62,37 @@ services:
       - 50000:50000
     volumes:
       - /home/ec2-user/jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock`
+      - /var/run/docker.sock:/var/run/docker.sock
+```
 
-- **Jenkins 컨테이너 실행**
+```bash
+docker compose up -d
+```
 
-Bash
+퍼블릭 IP:18080으로 접속해 초기 설정과 플러그인(Git·Pipeline·AWS)을 설치한다.
 
-`docker compose up -d`
+> 💡 **Jenkins 컨테이너에 `docker.sock`을 마운트**하는 이유는, Jenkins가 파이프라인 안에서 **호스트의 도커로 이미지를 빌드**하기 위해서다(Docker-outside-of-Docker). 이게 없으면 컨테이너 안에서 `docker build`를 할 수 없다.
 
-- **Jenkins 접속**
+---
 
-Cloud9 EC2 인스턴스의 퍼블릭 IP와 Jenkins 포트(18080)를 사용하여 웹 브라우저에서 Jenkins에 접속합니다. (예: http://15.164.237.24:18080)
+## 3. 2~4단계 — 소스·저장소·이벤트 연결
 
-- **Jenkins 초기 설정 및 플러그인 설치**
+| 단계 | 내용 |
+|------|------|
+| **2. 앱 배포** | 3-Tier 앱(`my-diary-3`)을 `docker compose up -d`로 실행, `:3000` 접속 확인 |
+| **3. CodeCommit** | `mydiary-repo` 저장소 생성 + IAM Git 사용자 권한 부여 → clone·push |
+| **4. 이벤트** | **SNS**(`mydiary-notification`) + **SQS**(`mydiary-event-queue`) 생성, CodeCommit **푸시 트리거 → SNS → SQS 구독** |
 
-Jenkins 초기 설정 과정을 진행하고, 필요한 플러그인(Git, Pipeline, AWS 등)을 설치합니다. 자세한 설정 방법은 이전 포스팅(VM 기반 컨테이너 배포 자동화)을 참고해 주세요.
+> 💡 **SNS + SQS를 끼우는 이유** — CodeCommit의 푸시 이벤트를 SNS가 받아 SQS 큐에 쌓아두면, Jenkins가 그 큐를 폴링해 처리한다. 이벤트를 큐에 버퍼링하므로, Jenkins가 잠시 바빠도 이벤트가 유실되지 않는다.
 
-### ☑️2단계: 3-Tier 애플리케이션 배포 및 테스트
+---
 
-이전 실습에서 사용했던 3-Tier 애플리케이션(my-diary-3)을 가져와서 Jenkins를 통해 배포하고 테스트해 보겠습니다.
+## 4. 5단계 — Jenkins 파이프라인 (Jenkinsfile)
 
-- **애플리케이션 소스 코드 가져오기 및 컨테이너 실행**
+AWS·Docker Hub 자격 증명을 **Credentials**에 등록하고, `Pipeline script from SCM`으로 CodeCommit의 `Jenkinsfile`을 읽게 한다.
 
-Bash
-
-`cp -r /home/kevin/fastcampus/ch10/my-diary-3 .
-cd my-diary-3
-docker compose up -d`
-
-코드를 사용할 때는 [주의](https://www.notion.so/faq#coding)가 필요합니다.
-
-- **애플리케이션 접속 테스트**
-
-웹 브라우저에서 `http://퍼블릭IP:3000`에 접속하여 애플리케이션이 정상적으로 실행되는지 확인합니다.
-
-### ☑️3단계: CodeCommit 저장소 생성 및 연동
-
-AWS CodeCommit은 안전하고 확장 가능한 프라이빗 Git 저장소를 제공하는 서비스입니다. 이제 CodeCommit 저장소를 생성하고, 애플리케이션 소스 코드를 저장소에 업로드해 보겠습니다.
-
-- **CodeCommit 저장소 생성:** AWS 관리 콘솔에서 CodeCommit 서비스로 이동하여 `mydiary-repo`라는 이름의 저장소를 생성합니다.
-- **IAM 사용자 생성 및 권한 부여:** IAM(Identity and Access Management) 서비스에서 Git 사용자를 생성하고, CodeCommit에 대한 권한을 부여합니다.
-- **로컬 저장소와 CodeCommit 연결:**
-
-Bash
-
-`git clone https://git-codecommit.ap-northeast-2.amazonaws.com/v1/repos/mydiary-repo`
-
-코드를 사용할 때는 [주의](https://www.notion.so/faq#coding)가 필요합니다.
-
-- **소스 코드 업로드:** 애플리케이션 소스 코드를 복사하여 CodeCommit 저장소에 커밋하고 푸시합니다.
-
-### ☑️4단계: SNS, SQS, CodeCommit Trigger 설정
-
-- **SNS 토픽 생성:** Amazon SNS(Simple Notification Service) 콘솔에서 `mydiary-notification`이라는 이름의 토픽을 생성합니다.
-- **SQS 대기열 생성:** Amazon SQS(Simple Queue Service) 콘솔에서 `mydiary-event-queue`라는 이름의 대기열을 생성합니다.
-- **CodeCommit 트리거 생성:** CodeCommit 저장소 설정에서 트리거를 생성하고, 이벤트 유형을 `푸시`로, SNS 토픽을 `mydiary-notification`으로 설정합니다.
-- **SNS 구독 생성:** `mydiary-notification` 토픽에 대한 구독을 생성하고, 프로토콜을 `SQS`, 엔드포인트를 `mydiary-event-queue`로 설정합니다.
-
-### ☑️5단계: Jenkins 설정 및 파이프라인 생성
-
-- **Jenkins Credentials 설정:**
-    - AWS 자격 증명: AWS 액세스 키 ID 및 비밀 액세스 키를 Jenkins Credentials에 추가합니다.
-    - Docker Hub 자격 증명: Docker Hub 사용자 이름과 비밀번호 또는 토큰을 Jenkins Credentials에 추가합니다.
-- **Jenkins Pipeline 생성:**
-    - 새로운 아이템 생성 후, "Pipeline" 유형을 선택합니다.
-    - Pipeline 이름을 지정하고, "Pipeline script from SCM" 옵션을 선택합니다.
-    - SCM: Git
-    - Repository URL: CodeCommit 저장소 URL
-    - Credentials: CodeCommit 연결 시 생성한 자격 증명
-    - Branch Specifier: `/master`
-    - Script Path: `Jenkinsfile`
-- **Jenkinsfile 작성**
-
-`pipeline {
+```groovy
+pipeline {
     agent any
     stages {
         stage('Build') {
@@ -144,10 +116,40 @@ Bash
             }
         }
     }
-}`
+}
+```
 
-### ☑️6단계: 자동 배포 테스트
+| Stage | 역할 |
+|------|------|
+| **Build** | Dockerfile로 이미지 빌드 |
+| **Tag** | ECR URI로 태깅 |
+| **Push** | ECR 로그인 후 이미지 push |
 
-- **소스 코드 변경 및 푸시:** `public/index.ejs` 파일을 수정하고, CodeCommit 저장소에 커밋하고 푸시합니다.
-- **자동 배포 확인:** Jenkins에서 빌드가 실행되고, ECR에 이미지가 푸시되는지 확인합니다.
-- **애플리케이션 접속:** 웹 브라우저에서 애플리케이션에 접속하여 변경 사항이 반영되었는지 확인합니다.
+> ⚠️ AWS 키는 절대 Jenkinsfile에 직접 쓰지 말고, **`credentials('awsaccess')`처럼 Jenkins Credentials에서 주입**한다. `environment` 블록에 넣으면 실행 시점에만 환경 변수로 안전하게 채워진다.
+
+---
+
+## 5. 6단계 — 자동 배포 테스트
+
+`public/index.ejs`를 수정해 CodeCommit에 푸시하면, **Jenkins 빌드가 자동 실행 → ECR에 이미지 push**된다. 애플리케이션에 접속해 변경 사항이 반영됐는지 확인한다.
+
+---
+
+## 📝 정리
+
+```
+Jenkins CI/CD (AWS)
+├─ 설치   Cloud9 + Jenkins(docker.sock 마운트)
+├─ 소스   CodeCommit(프라이빗 Git)
+├─ 이벤트 CodeCommit → SNS → SQS → Jenkins
+├─ 빌드   Jenkinsfile: Build → Tag → Push(ECR)
+└─ 보안   AWS 키는 Credentials로 주입
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Jenkins** | CI/CD 자동화 서버 |
+| **SNS/SQS** | 이벤트 전달·버퍼링 |
+| **Jenkinsfile** | 파이프라인 코드(as Code) |
+
+이 파이프라인의 핵심은 **CodeCommit 푸시 → (SNS/SQS) → Jenkins 빌드 → ECR push**로 이어지는 자동화다. GitHub Actions와 목적은 같지만, **AWS 관리형 서비스로 구성**해 확장성과 통합성을 확보한 것이 특징이다.

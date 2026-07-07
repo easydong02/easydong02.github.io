@@ -4,24 +4,38 @@ date: 2024-10-02 00:00:00 +0900
 categories: [Infra, Kubernetes]
 tags: [kubernetes, rbac, role, clusterrole, binding, network]
 render_with_liquid: false
+mermaid: true
 ---
 
-# Kubernetes 기본 보안 구성
+## 📌 들어가며
 
-Kubernetes는 컨테이너 오케스트레이션 시스템으로, 클러스터 환경에서 보안은 매우 중요한 요소입니다. Kubernetes는 다양한 보안 메커니즘을 제공하여 클러스터와 애플리케이션을 보호하고 관리할 수 있습니다. 이번 포스팅에서는 Kubernetes의 보안 구성 중에서 **RBAC(Role-Based Access Control)**, **ServiceAccount**, **NetworkPolicy**를 통해 보안을 강화하는 방법을 살펴보겠습니다.
+이번 글에서는 쿠버네티스의 **보안 3요소**를 정리한다. **RBAC**(누가 무엇을 할 수 있는가), **ServiceAccount**(파드의 신원), **NetworkPolicy**(파드 간 통신 통제)를 통해 클러스터와 애플리케이션을 보호한다.
 
-## 1. Role-Based Access Control (RBAC)
+> **보안의 두 축** — **RBAC**는 *"누가 어떤 리소스에 무슨 작업을 할 수 있는가"*(접근 제어)를, **NetworkPolicy**는 *"어떤 파드가 어떤 파드와 통신할 수 있는가"*(네트워크 제어)를 담당한다. 둘은 서로 다른 계층을 지킨다.
 
-**RBAC**는 Kubernetes에서 사용자, 그룹, 애플리케이션 또는 서비스가 수행할 수 있는 작업을 제어하는 메커니즘입니다. **Role**과 **ClusterRole**은 리소스에 대한 권한을 정의하며, **RoleBinding**과 **ClusterRoleBinding**은 이러한 역할을 사용자에게 부여합니다.
+---
 
-### 1.1 Role과 RoleBinding
+## 1. RBAC — Role & Binding
 
-**Role**은 특정 네임스페이스 내에서만 유효한 권한을 정의하며, **RoleBinding**을 통해 해당 Role을 사용자 또는 서비스 계정에 연결할 수 있습니다.
+**RBAC(Role-Based Access Control)**는 **역할(Role/ClusterRole)**을 정의하고 **바인딩(RoleBinding/ClusterRoleBinding)**으로 사용자에게 부여한다.
 
-### Role 예시
+```mermaid
+flowchart LR
+    Role["📜 Role<br/>(권한 정의)"]
+    Binding["🔗 RoleBinding"]
+    User["👤 User / SA"]
+    Role --> Binding --> User
+```
+
+| 오브젝트 | 범위 |
+|------|------|
+| **Role** / **RoleBinding** | 특정 **네임스페이스** |
+| **ClusterRole** / **ClusterRoleBinding** | **클러스터 전체** |
+
+### Role & RoleBinding (네임스페이스 범위)
 
 ```yaml
-yaml
+# Role — dev-ns에서 파드 조회 권한
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -31,14 +45,8 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "list", "watch"]
-```
-
-위 예시는 `dev-ns` 네임스페이스에서 Pod를 조회하는 권한을 가진 Role을 정의한 것입니다.
-
-### RoleBinding 예시
-
-```yaml
-yaml
+---
+# RoleBinding — dev-user에게 부여
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -54,16 +62,9 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-이 예시는 `dev-user`에게 `pod-reader` Role을 부여하여, `dev-ns` 네임스페이스에서 Pod를 조회할 수 있는 권한을 부여합니다.
-
-### 1.2 ClusterRole과 ClusterRoleBinding
-
-**ClusterRole**은 클러스터 전체에서 유효한 권한을 정의합니다. **ClusterRoleBinding**을 통해 해당 ClusterRole을 특정 사용자나 그룹에 할당할 수 있습니다.
-
-### ClusterRole 예시
+### ClusterRole & ClusterRoleBinding (클러스터 범위)
 
 ```yaml
-yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -74,49 +75,26 @@ rules:
   verbs: ["get", "list", "watch", "delete"]
 ```
 
-### ClusterRoleBinding 예시
+> 💡 **Role은 "권한의 정의", Binding은 "권한의 부여"**로 분리되어 있다. 이 분리 덕분에 하나의 Role을 여러 사용자에게 재사용할 수 있다. `verbs`(get/list/delete 등)와 `resources`(pods 등)의 조합으로 세밀하게 권한을 정한다.
 
-```yaml
-yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: admin-binding
-subjects:
-- kind: User
-  name: "admin-user"
-  apiGroup: rbac.authorization.k8s.io
-roleRef:
-  kind: ClusterRole
-  name: cluster-admin-role
-  apiGroup: rbac.authorization.k8s.io
-```
+---
 
-위의 설정을 통해 `admin-user`는 클러스터 전체에서 Pod를 조회, 삭제할 수 있는 권한을 얻게 됩니다.
+## 2. ServiceAccount — 파드의 신원
 
-## 2. ServiceAccount
-
-**ServiceAccount**는 Kubernetes에서 Pod와 같은 내부 애플리케이션이 API 서버와 상호작용할 때 사용하는 계정입니다. 각 Pod는 기본적으로 ServiceAccount를 통해 권한을 얻어 작업을 수행합니다.
-
-### ServiceAccount 생성 예시
+**ServiceAccount(SA)**는 파드가 **API 서버와 상호작용할 때 쓰는 계정**이다. 사람이 아니라 **애플리케이션(파드)의 신원**이다.
 
 ```bash
 kubectl create serviceaccount dev-sa -n dev-ns
 ```
 
-이 명령어는 `dev-ns` 네임스페이스에 `dev-sa`라는 ServiceAccount를 생성합니다.
-
-### ServiceAccount를 사용하는 Pod 예시
-
 ```yaml
-yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: sa-pod
   namespace: dev-ns
 spec:
-  serviceAccountName: dev-sa
+  serviceAccountName: dev-sa      # 이 SA의 권한으로 API 접근
   containers:
   - name: nginx
     image: nginx
@@ -124,18 +102,16 @@ spec:
     - containerPort: 80
 ```
 
-이 설정은 `dev-sa` ServiceAccount를 사용하는 Pod를 정의합니다. 해당 Pod는 `dev-sa` 계정을 통해 Kubernetes API 서버와 상호작용할 수 있습니다.
+> 💡 **User는 사람, ServiceAccount는 파드(앱)**의 계정이다. 파드가 API 서버에 요청할 때 SA의 권한을 따르므로, SA에 RBAC를 바인딩해 **파드가 할 수 있는 일을 제한**한다.
 
-## 3. NetworkPolicy
+---
 
-**NetworkPolicy**는 Kubernetes에서 네트워크 트래픽을 제어하는 정책을 정의하는 오브젝트입니다. 이를 통해 Pod 간의 통신을 제어하고, 외부 네트워크로부터의 접근을 제한할 수 있습니다.
+## 3. NetworkPolicy — 파드 통신 통제
 
-### 기본 NetworkPolicy 예시
-
-다음은 특정 Pod에 대한 모든 외부 트래픽을 차단하는 NetworkPolicy 예시입니다.
+**NetworkPolicy**는 파드 간·외부와의 트래픽을 제어한다.
 
 ```yaml
-yaml
+# 모든 트래픽 차단 (myapp 파드)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -152,14 +128,8 @@ spec:
   egress: []
 ```
 
-이 설정은 `myapp` 라벨이 붙은 모든 Pod로 들어오는 트래픽과 나가는 트래픽을 차단합니다.
-
-### 특정 트래픽 허용 예시
-
-특정 트래픽만 허용하려면 다음과 같은 정책을 적용할 수 있습니다.
-
 ```yaml
-yaml
+# 특정 대역·포트만 허용
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -180,27 +150,21 @@ spec:
       port: 80
 ```
 
-이 설정은 `myapp` 라벨이 있는 Pod에 192.168.1.0/24 네트워크 대역에서 오는 TCP 80번 포트의 트래픽만 허용합니다.
+> ⚠️ **NetworkPolicy는 CNI가 지원해야 동작한다.** Calico 같은 정책 지원 CNI가 없으면 정책을 만들어도 무시된다. 또 기본값은 "모두 허용"이라, 한 번이라도 정책이 붙은 파드는 **명시적으로 허용한 트래픽만** 통과시키는 화이트리스트 방식이 된다.
 
-## 4. Kubernetes Dashboard 보안 구성
+---
 
-**Kubernetes Dashboard**는 클러스터를 시각적으로 관리할 수 있는 UI입니다. 그러나, 클러스터 전체를 관리할 수 있는 권한을 부여받기 위해서는 적절한 권한 설정이 필요합니다.
+## 4. Dashboard 보안 구성 예시
 
-### Dashboard 접근을 위한 ServiceAccount 생성
+Dashboard에 관리자 권한을 주려면 SA를 만들고 `cluster-admin`을 바인딩한다.
 
 ```yaml
-yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: admin-user
   namespace: kubernetes-dashboard
-```
-
-### ClusterRoleBinding 설정
-
-```yaml
-yaml
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -215,4 +179,24 @@ subjects:
   namespace: kubernetes-dashboard
 ```
 
-이 설정을 통해 `admin-user`라는 ServiceAccount는 클러스터 관리자 권한을 부여받게 됩니다.
+> ⚠️ `cluster-admin`은 **모든 권한**을 가진 최강 역할이다. 편의상 Dashboard 실습에 쓰지만, 실무에서는 필요한 권한만 담은 **커스텀 ClusterRole**을 만들어 최소 권한 원칙을 지켜야 한다.
+
+---
+
+## 📝 정리
+
+```
+쿠버네티스 보안
+├─ RBAC          Role(정의) + Binding(부여), NS/클러스터 범위
+├─ ServiceAccount 파드의 신원(앱의 API 접근 권한)
+├─ NetworkPolicy  파드 간 통신 화이트리스트(CNI 필요)
+└─ 원칙          최소 권한(cluster-admin 남용 X)
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **RBAC** | 누가·무엇을·할 수 있는가 |
+| **ServiceAccount** | 파드(앱)의 계정 |
+| **NetworkPolicy** | 파드 통신 방화벽 |
+
+쿠버네티스 보안의 핵심은 **RBAC로 접근을, NetworkPolicy로 통신을 통제**하는 것이다. 파드에는 ServiceAccount로 신원을 부여하고, 모든 권한은 최소 권한 원칙으로 좁게 주는 것이 안전하다.

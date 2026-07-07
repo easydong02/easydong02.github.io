@@ -4,27 +4,45 @@ date: 2024-09-27 00:00:00 +0900
 categories: [Infra, Kubernetes]
 tags: [kubernetes, daemonset, deployment, hpa, job, cronjob]
 render_with_liquid: false
+mermaid: true
 ---
 
-# Kubernetes Workload Resources: Pod를 위한 리소스 관리
+## 📌 들어가며
 
-Kubernetes에서 애플리케이션을 관리할 때 가장 중요한 요소 중 하나는 **Workload Resources**입니다. **Pod**는 Kubernetes의 기본 실행 단위이며, 이들 Pod를 효율적으로 관리하기 위해 다양한 **Workload Resources**가 필요합니다. 이번 글에서는 Kubernetes의 대표적인 Workload Resources인 **Deployment**, **StatefulSet**, **DaemonSet**, **Job**, **CronJob**, 그리고 **Horizontal Pod Autoscaler (HPA)**를 살펴보겠습니다.
+이번 글에서는 파드를 효율적으로 관리하는 **워크로드 리소스(Workload Resource)**를 정리한다. 파드를 직접 다루는 대신, 목적에 맞는 상위 리소스(**Deployment·StatefulSet·DaemonSet·Job·CronJob·HPA**)로 관리하는 것이 쿠버네티스의 방식이다.
 
-## 1. Deployment
+> **왜 파드를 직접 안 만드나?** 파드는 죽으면 그걸로 끝이라, 직접 만들면 자동 복구·확장이 안 된다. 그래서 **워크로드 리소스로 파드를 "감싸서"** 관리한다. 각 리소스는 파드를 다루는 목적이 다르다.
 
-**Deployment**는 Kubernetes에서 가장 일반적으로 사용하는 리소스로, Pod의 배포 및 업데이트를 관리합니다. Deployment는 여러 Pod를 복제하여 애플리케이션을 확장하고, 배포 전략에 따라 롤링 업데이트 및 롤백을 처리할 수 있습니다.
+---
 
-### Deployment의 주요 기능
+## 0. 워크로드 리소스 한눈에
 
-- **복제본 관리**: Pod의 복제본을 관리하여 일정 수의 Pod가 항상 실행되도록 보장.
-- **롤링 업데이트**: 기존 Pod를 단계적으로 교체하여 애플리케이션을 업데이트.
-- **롤백**: 문제가 발생한 경우 이전 상태로 되돌리기 가능.
+| 리소스 | 용도 |
+|------|------|
+| **Deployment** | 무상태 앱, 복제·롤링 업데이트 (가장 일반적) |
+| **StatefulSet** | 상태 유지 앱(DB 등), 고유 ID·영구 스토리지 |
+| **DaemonSet** | 모든 노드에 하나씩(로그·모니터링 에이전트) |
+| **Job** | 일회성 작업(완료까지 실행) |
+| **CronJob** | 예약·반복 작업 |
+| **HPA** | 부하 기반 파드 수 자동 조절 |
 
-### Deployment 예시
+```mermaid
+flowchart TD
+    WL["워크로드 리소스"]
+    WL --> D["Deployment<br/>(무상태·복제)"]
+    WL --> S["StatefulSet<br/>(상태 유지)"]
+    WL --> DS["DaemonSet<br/>(노드마다 1개)"]
+    WL --> J["Job/CronJob<br/>(작업)"]
+    HPA["HPA"] -. 스케일 .-> D
+```
+
+---
+
+## 1. Deployment — 가장 일반적
+
+무상태 앱의 **복제·롤링 업데이트·롤백**을 담당한다.
 
 ```yaml
-yaml
-코드 복사
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,22 +64,17 @@ spec:
         - containerPort: 80
 ```
 
-이 설정은 `nginx:1.21` 이미지를 사용하는 3개의 Pod 복제본을 생성하고 관리합니다.
+`nginx:1.21` 파드 **3개 복제본**을 유지한다. 하나가 죽으면 자동으로 다시 만든다.
 
-## 2. StatefulSet
+> 💡 **롤링 업데이트**가 Deployment의 핵심 강점이다. 이미지를 새 버전으로 바꾸면, 기존 파드를 한 번에 다 내리지 않고 **하나씩 교체**해 무중단 배포가 된다. 문제가 생기면 `kubectl rollout undo`로 즉시 롤백할 수 있다.
 
-**StatefulSet**은 상태를 유지해야 하는 애플리케이션을 위한 리소스입니다. StatefulSet은 각 Pod에 고유한 네트워크 ID와 영구적인 스토리지를 제공하여 Pod가 재시작되어도 상태를 유지할 수 있게 합니다.
+---
 
-### StatefulSet의 주요 기능
+## 2. StatefulSet — 상태 유지
 
-- **고유한 네트워크 ID**: 각 Pod는 고유한 정적인 네트워크 ID를 가짐.
-- **영구 스토리지**: Pod가 삭제되고 다시 생성되어도 데이터를 유지.
-- **순차적인 배포**: Pod가 정해진 순서대로 배포되고 종료됨.
-
-### StatefulSet 예시
+DB처럼 **각 파드가 고유 정체성과 영구 스토리지**를 가져야 하는 앱에 쓴다.
 
 ```yaml
-yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -92,19 +105,21 @@ spec:
           storage: 1Gi
 ```
 
-## 3. DaemonSet
+| 특징 | 설명 |
+|------|------|
+| **고유 네트워크 ID** | `pod-0`, `pod-1`처럼 안정적 이름 |
+| **영구 스토리지** | 재생성돼도 데이터 유지 |
+| **순차 배포** | 정해진 순서로 생성·종료 |
 
-**DaemonSet**은 클러스터의 각 노드에 하나의 Pod를 배포하는 리소스입니다. 주로 노드별 로그 수집기, 모니터링 에이전트 등을 배포할 때 사용됩니다.
+> 💡 **Deployment는 파드가 다 똑같아도(무상태) 되지만, StatefulSet은 파드마다 정체성이 있다.** 예를 들어 DB 클러스터의 primary/replica처럼 순서와 개별 저장소가 중요할 때 StatefulSet을 쓴다.
 
-### DaemonSet의 주요 기능
+---
 
-- **노드마다 하나의 Pod**: 클러스터 내 모든 노드에 동일한 Pod가 배포됨.
-- **노드 추가 시 자동 배포**: 새로운 노드가 클러스터에 추가되면 DaemonSet은 해당 노드에 자동으로 Pod를 배포.
+## 3. DaemonSet — 노드마다 하나
 
-### DaemonSet 예시
+로그 수집기·모니터링 에이전트처럼 **모든 노드에 하나씩** 떠야 하는 것에 쓴다.
 
 ```yaml
-yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -129,14 +144,16 @@ spec:
             memory: 200Mi
 ```
 
-## 4. Job & CronJob
+노드가 **추가되면 자동으로** 해당 노드에도 파드가 배포된다.
 
-**Job**은 일회성 작업을 실행할 때 사용되며, 작업이 완료될 때까지 Pod를 실행합니다. **CronJob**은 일정한 시간에 반복적으로 Job을 실행할 때 사용됩니다.
+---
 
-### Job 예시
+## 4. Job & CronJob — 작업
+
+**Job**은 완료가 목적인 일회성 작업, **CronJob**은 예약·반복 작업이다.
 
 ```yaml
-yaml
+# Job — 한 번 실행 후 완료
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -151,10 +168,8 @@ spec:
       restartPolicy: Never
 ```
 
-### CronJob 예시
-
 ```yaml
-yaml
+# CronJob — 매 1분마다 실행
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -172,14 +187,15 @@ spec:
           restartPolicy: OnFailure
 ```
 
-## 5. Horizontal Pod Autoscaler (HPA)
+> 💡 일반 워크로드(Deployment 등)는 파드가 **계속 떠 있는 것**이 목표지만, Job은 **끝나는 것**이 목표다. 그래서 `restartPolicy`가 `Never`/`OnFailure`이고, 작업이 완료되면 파드가 종료 상태로 남는다.
 
-- *Horizontal Pod Autoscaler (HPA)**는 Pod의 리소스 사용량(CPU, 메모리 등)에 따라 자동으로 Pod의 수를 조정합니다. HPA는 동적으로 애플리케이션의 부하를 처리할 수 있도록 Pod의 수를 늘리거나 줄이는 데 사용됩니다.
+---
 
-### HPA 예시
+## 5. HPA — 자동 스케일링
+
+파드의 **CPU/메모리 사용량에 따라 파드 수를 자동 조절**한다.
 
 ```yaml
-yaml
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
@@ -194,4 +210,27 @@ spec:
   targetCPUUtilizationPercentage: 80
 ```
 
-HPA는 `example-deployment`의 CPU 사용량이 80%를 넘으면 Pod 수를 최대 10개까지 자동으로 확장합니다.
+`example-deployment`의 CPU가 **80%를 넘으면 최대 10개까지** 파드를 자동 확장한다.
+
+> ⚠️ HPA가 동작하려면 **metrics-server**가 설치되어 있어야 한다. HPA는 metrics-server가 수집한 CPU/메모리 지표를 보고 판단하므로, 이게 없으면 스케일링이 작동하지 않는다.
+
+---
+
+## 📝 정리
+
+```
+워크로드 리소스
+├─ Deployment   무상태·복제·롤링 업데이트(기본)
+├─ StatefulSet  상태 유지(고유 ID·영구 스토리지)
+├─ DaemonSet    노드마다 1개(에이전트)
+├─ Job/CronJob  일회성 / 예약 작업
+└─ HPA          부하 기반 파드 수 자동 조절
+```
+
+| 리소스 | 한 줄 정의 |
+|------|------|
+| **Deployment** | 무상태 앱 관리(롤링) |
+| **StatefulSet** | 상태 유지 앱 |
+| **HPA** | 자동 수평 확장 |
+
+워크로드 리소스의 핵심은 **파드를 직접 다루지 않고, 목적에 맞는 상위 리소스로 감싸 관리**하는 것이다. 무상태는 Deployment, 상태 유지는 StatefulSet, 에이전트는 DaemonSet, 작업은 Job — 이 매핑을 기억하면 된다.

@@ -4,71 +4,62 @@ date: 2024-09-30 00:00:00 +0900
 categories: [Infra, Kubernetes]
 tags: [kubernetes, namespace, ns]
 render_with_liquid: false
+mermaid: true
 ---
 
-# Kubernetes Namespace 관리
+## 📌 들어가며
 
-Kubernetes에서 **Namespace**는 클러스터 내의 리소스를 분리하고 조직화하는 중요한 방법입니다. 여러 팀이 하나의 Kubernetes 클러스터를 공유할 때, 네트워크, 리소스, 권한을 격리하여 효율적으로 관리할 수 있는 방법을 제공하는 것이 바로 Namespace입니다. 이번 포스팅에서는 Namespace의 개념, 생성 방법, ResourceQuota 및 LimitRange 설정에 대해 자세히 알아보겠습니다.
+이번 글에서는 클러스터 리소스를 논리적으로 나누는 **네임스페이스(Namespace)**를 정리한다. 여러 팀·환경이 하나의 클러스터를 공유할 때, 네임스페이스로 리소스를 격리하고 **ResourceQuota·LimitRange**로 자원을 통제한다.
 
-## 1. Namespace의 개념
+> **Namespace란?** 클러스터 내 리소스를 **논리적으로 분리하는 단위**. 하나의 물리 클러스터를 여러 가상 클러스터처럼 나눠, 개발/운영/테스트 환경이나 팀별로 격리해 관리할 수 있다.
 
-Namespace는 Kubernetes에서 리소스를 논리적으로 분리하는 단위입니다. 기본적으로 생성되는 네임스페이스는 다음과 같습니다:
+---
 
-- **default**: 기본 Namespace로, 명시적으로 네임스페이스를 지정하지 않으면 default에 리소스가 생성됩니다.
-- **kube-system**: Kubernetes 시스템 구성 요소들이 위치하는 네임스페이스.
-- **kube-public**: 모든 사용자가 읽을 수 있는 리소스가 저장되는 네임스페이스.
-- **kube-node-lease**: 노드에 대한 heartbeat 정보를 저장하는 네임스페이스.
+## 1. 기본 네임스페이스 & 생성
 
-Namespace를 활용하면 개발, 운영, 테스트 등의 환경을 분리하여 관리할 수 있습니다.
-
-### Namespace 생성
-
-새로운 네임스페이스는 `kubectl` 명령어를 사용하여 간단히 생성할 수 있습니다.
+| 기본 네임스페이스 | 용도 |
+|------|------|
+| **default** | 지정 안 하면 여기에 생성 |
+| **kube-system** | 쿠버네티스 시스템 구성 요소 |
+| **kube-public** | 모든 사용자가 읽는 리소스 |
+| **kube-node-lease** | 노드 heartbeat 정보 |
 
 ```bash
-kubectl create namespace dev-ns
+kubectl create namespace dev-ns      # 생성
+kubectl get namespaces               # 목록
+kubectl get all -n dev-ns            # 특정 NS 리소스
 ```
 
-생성된 네임스페이스는 다음 명령어로 확인할 수 있습니다.
-
-```bash
-kubectl get namespaces
-```
-
-### Namespace 내 리소스 확인
-
-특정 네임스페이스 내에 있는 리소스를 확인하려면 다음 명령을 사용할 수 있습니다.
-
-```bash
-kubectl get all -n dev-ns
-```
+---
 
 ## 2. 네임스페이스와 DNS
 
-Kubernetes의 네임스페이스는 DNS와 통합되어 리소스 간 통신을 간편하게 해줍니다. 각 네임스페이스는 고유한 DNS 도메인을 가지며, 이를 통해 네임스페이스 간에도 명확한 통신을 할 수 있습니다. 예를 들어, 동일한 네임스페이스 내에서 Pod에 접근할 때는 서비스 이름만 사용하면 되지만, 다른 네임스페이스의 서비스에 접근하려면 다음과 같은 형식을 사용합니다:
+같은 네임스페이스면 **서비스 이름만**으로 통신하지만, 다른 네임스페이스면 **전체 도메인**을 써야 한다.
 
-```php
-<service-name>.<namespace-name>.svc.cluster.local
+```
+<service-name>.<namespace>.svc.cluster.local
 ```
 
-### DNS 예시
-
-다음은 다른 네임스페이스 간에 서비스에 접근하는 방법을 보여주는 예시입니다.
-
-```bash
-mysql.connect("mydb-svc.dev.svc.cluster.local")
+```mermaid
+flowchart LR
+    subgraph dev["dev-ns"]
+        A["앱 A"]
+    end
+    subgraph ops["ops-ns"]
+        DB["mydb-svc"]
+    end
+    A -- "mydb-svc.ops-ns.svc.cluster.local" --> DB
 ```
 
-이 예시에서는 `dev` 네임스페이스에 있는 `mydb-svc` 서비스를 참조하고 있습니다.
+> 💡 **같은 NS 안**에서는 `mydb-svc`처럼 짧게, **다른 NS**로는 `mydb-svc.dev.svc.cluster.local`처럼 길게 부른다. DNS 이름에 네임스페이스가 포함되므로, 이름만 봐도 어느 네임스페이스의 서비스인지 알 수 있다.
 
-## 3. ResourceQuota 설정
+---
 
-**ResourceQuota**는 네임스페이스 내에서 사용할 수 있는 리소스의 최대치를 제한하는 방법입니다. ResourceQuota는 CPU, 메모리, 스토리지, 그리고 Pod 개수 등 다양한 자원에 대해 제한을 설정할 수 있습니다. 이를 통해 네임스페이스별로 자원 사용량을 조정하고 관리할 수 있습니다.
+## 3. ResourceQuota — 네임스페이스 총량 제한
 
-### ResourceQuota 예시
+네임스페이스가 쓸 수 있는 **자원 총량**(CPU·메모리·파드 수 등)을 제한한다.
 
 ```yaml
-yaml
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -76,34 +67,24 @@ metadata:
   namespace: dev-ns
 spec:
   hard:
-    requests.cpu: "1000m"  # 총 1 CPU
-    requests.memory: "1Gi" # 총 1GB 메모리
-    limits.cpu: "2000m"    # 최대 2 CPU
-    limits.memory: "2Gi"   # 최대 2GB 메모리
+    requests.cpu: "1000m"     # 총 1 CPU
+    requests.memory: "1Gi"    # 총 1GB
+    limits.cpu: "2000m"       # 최대 2 CPU
+    limits.memory: "2Gi"      # 최대 2GB
 ```
-
-이 설정은 `dev-ns` 네임스페이스에서 CPU 사용량을 최대 2개 코어로 제한하고, 메모리 사용량은 최대 2GB로 제한하는 예시입니다.
-
-### ResourceQuota 설정 및 적용
 
 ```bash
 kubectl apply -f rq-1.yaml
-```
-
-적용된 ResourceQuota를 확인하려면 다음 명령을 사용합니다.
-
-```bash
 kubectl describe resourcequotas -n dev-ns
 ```
 
-## 4. LimitRange 설정
+---
 
-**LimitRange**는 네임스페이스 내에서 Pod 또는 컨테이너가 사용할 수 있는 최소 및 최대 자원 요청 값을 설정할 수 있습니다. 이 기능은 리소스 사용량을 미리 정의하여 각 컨테이너가 적절한 자원을 할당받도록 보장합니다.
+## 4. LimitRange — 컨테이너 개별 제한
 
-### LimitRange 예시
+**개별 컨테이너/파드**의 최소·최대·기본 자원 값을 정한다.
 
 ```yaml
-yaml
 apiVersion: v1
 kind: LimitRange
 metadata:
@@ -112,70 +93,58 @@ metadata:
 spec:
   limits:
     - type: Container
-      max:
-        cpu: "1"
-        memory: "1Gi"
-      min:
-        cpu: "100m"
-        memory: "256Mi"
-      default:
-        cpu: "500m"
-        memory: "512Mi"
-      defaultRequest:
-        cpu: "200m"
-        memory: "256Mi"
+      max:       {cpu: "1",    memory: "1Gi"}
+      min:       {cpu: "100m", memory: "256Mi"}
+      default:   {cpu: "500m", memory: "512Mi"}
+      defaultRequest: {cpu: "200m", memory: "256Mi"}
 ```
 
-이 예시는 `dev-ns` 네임스페이스 내의 컨테이너가 최소 100m CPU, 256Mi 메모리를 사용하고, 최대 1 CPU와 1Gi 메모리를 사용할 수 있도록 설정합니다.
+> 💡 **ResourceQuota vs LimitRange** — ResourceQuota는 "**네임스페이스 전체가 쓸 수 있는 총량**"을, LimitRange는 "**컨테이너 하나가 쓸 수 있는 범위(및 기본값)**"를 정한다. 둘을 함께 쓰면, 한 컨테이너가 자원을 독점하는 것도, 네임스페이스가 클러스터를 잠식하는 것도 막을 수 있다.
 
-### LimitRange 설정 및 적용
+---
+
+## 5. 네임스페이스 전환 & 실습
+
+매번 `-n`을 붙이기 번거로우면 기본 네임스페이스를 바꾼다.
 
 ```bash
-kubectl apply -f limitr-1.yaml
+kubectl config set-context --current --namespace=dev-ns   # 전환
+kubectl config view --minify | grep namespace:            # 현재 확인
 ```
 
-적용된 LimitRange를 확인하려면 다음 명령을 사용합니다.
+**네임스페이스 간 통신 실습:**
 
 ```bash
-kubectl describe limitranges -n dev-ns
-```
-
-## 5. 네임스페이스 전환 및 기본 네임스페이스 설정
-
-기본 네임스페이스를 변경하거나 특정 네임스페이스로 작업하려면 `kubectl config set-context` 명령을 사용하여 쉽게 전환할 수 있습니다.
-
-### 네임스페이스 전환
-
-```bash
-kubectl config set-context --current --namespace=dev-ns
-```
-
-현재 설정된 네임스페이스를 확인하려면 다음 명령어를 실행합니다.
-
-```bash
-kubectl config view --minify | grep namespace:
-```
-
-이 명령을 통해 현재 작업 중인 네임스페이스가 무엇인지 확인할 수 있습니다.
-
-## 6. 네임스페이스 활용 실습
-
-Namespace를 활용한 실습을 통해 다양한 네임스페이스 간 리소스 관리 및 통신 설정 방법을 알아보겠습니다.
-
-### 네임스페이스 간 서비스 통신
-
-```bash
-# ops-ns 네임스페이스에 nstest 배포
+# 각 네임스페이스에 동일 이름 배포
 kubectl create deployment nstest -n ops-ns --image=nginx --port=80 --replicas=2
-kubectl expose deployment nstest --name=nstest-svc --port=80 --target-port=80 -n ops-ns
-
-# dev-ns 네임스페이스에 동일한 배포 생성
+kubectl expose deployment nstest --name=nstest-svc --port=80 -n ops-ns
 kubectl create deployment nstest -n dev-ns --image=nginx --port=80 --replicas=2
-kubectl expose deployment nstest --name=nstest-svc --port=80 --target-port=80 -n dev-ns
+kubectl expose deployment nstest --name=nstest-svc --port=80 -n dev-ns
 
-# dev-ns와 ops-ns 간 통신 확인
+# DNS로 네임스페이스 구분해 통신
 curl http://nstest-svc.ops-ns.svc.cluster.local
 curl http://nstest-svc.dev-ns.svc.cluster.local
 ```
 
-이 실습에서는 두 개의 네임스페이스에 각각 서비스를 배포하고, 서로 다른 네임스페이스 간의 통신이 DNS를 통해 어떻게 이루어지는지 확인할 수 있습니다
+같은 이름(`nstest-svc`)이라도 **네임스페이스가 다르면 별개의 서비스**로 동작함을 확인할 수 있다.
+
+---
+
+## 📝 정리
+
+```
+네임스페이스
+├─ 개념   리소스 논리 분리(팀·환경별)
+├─ 기본   default / kube-system / kube-public
+├─ DNS    <svc>.<ns>.svc.cluster.local
+├─ Quota  네임스페이스 총량 제한
+└─ LimitRange 컨테이너 개별 범위·기본값
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **Namespace** | 리소스 논리 격리 단위 |
+| **ResourceQuota** | NS 전체 자원 총량 |
+| **LimitRange** | 컨테이너 개별 자원 범위 |
+
+네임스페이스의 핵심은 **하나의 클러스터를 여러 논리 공간으로 나눠 격리**하는 것이다. 여기에 ResourceQuota(총량)와 LimitRange(개별)를 더하면, 여러 팀이 자원을 두고 충돌하지 않고 클러스터를 공유할 수 있다.
