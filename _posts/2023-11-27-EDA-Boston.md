@@ -7,159 +7,110 @@ render_with_liquid: false
 future: true
 ---
 
-오늘은 간단한 토이프로젝트처럼 보스턴부동산에 관한 데이터셋을 분석해봤습니다~ 보스턴 부동산 가격에 관한 유의미한 Factor를 찾아보려고 합니다.
+## 📌 들어가며
 
-#### **EDA**
+이번 글에서는 보스턴 부동산 데이터셋으로 **집값(MEDV)에 영향을 주는 요인**을 찾는 EDA를 진행한다. 상관관계 히트맵으로 핵심 지표를 찾고, 상권/비상권·가격대별로 데이터를 나눠 숨은 패턴을 관찰한다.
 
--   다양한 각도에서 데이터를 관찰하고 이해하는 과정입니다. 데이터의 이해도가 높아지면서 숨겨진 의미를 발견하고 잠재적인 문제를 미리 발견할 수 있습니다. 이를 바탕으로 데이터를 보완하거나 기존의 가설을 수정할 수 있습니다.
+> **EDA란?** 다양한 각도에서 데이터를 관찰·이해하는 과정. 이해도가 높아지면서 **숨은 의미와 잠재적 문제**를 발견하고, 이를 바탕으로 가설을 보완·수정한다.
 
-```
-df = pd.read_excel('/content/drive/MyDrive/Colab Notebooks/이어드림강의/2022-04-21(Toy)/BostonHousing.xls')
+---
+
+## 1. 데이터 확인 & MEDV 분포
+
+```python
+df = pd.read_excel('BostonHousing.xls')
 df.head()
-```
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/1.png)
-
-일단 파일을 가져왔습니다. 여기서 head()메서드로 간략하게 어떤 정보들이 들어있는지 확인합니다.
-
-![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/2.png)
-
-각 피쳐들에 대한 설명입니다. 우리는 여기서 저 MEDV 값에 영향을 주는 요인들을 찾아볼겁니다.
-
-```
-plt.figure()
-sns.histplot( data=df, x="MEDV") # MEDV의 분포를 알아보기 위해 히스토그램으로 확인, 20000달러 주변에 많이 분포되어 있고 다만 50000달러 지표가 튀는 것 같아 조사가 필요해보임.
-plt.show()
+sns.histplot(data=df, x="MEDV")   # 목표 변수 분포
 ```
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/3.png)
 
-보니까 50이상은 다 50으로 한것같은데 자세히 보겠습니다.
+20,000달러 부근에 몰려 있는데, **50,000달러 지점이 튀어** 조사가 필요하다.
 
+```python
+df.loc[df["MEDV"] >= 50]   # 50 이상은 전부 50.0
 ```
-df.loc[df["MEDV"]>=50]
-```
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/4.png)
+> ⚠️ **50 이상이 모두 50.0**이었다. 상한값을 잘라(censoring) 기록한 데이터로, 이런 인위적 절단은 분석을 왜곡할 수 있으니 반드시 짚고 넘어가야 한다.
 
-그렇네요. 50.0밖에 없는걸 보니 50이상은 50.0으로 바꾼 것 같습니다.
+---
 
-```
-plt.figure(figsize=(10,10))
-df_corr=df.corr() # corr() 메서드로 df의 상관관계 계수를 df_corr에 저장
+## 2. 상관관계 히트맵
 
-sns.heatmap(data=df_corr, annot=True, cmap="Blues_r") # seaborn heatmap으로 df_cprr()를 시각화, annot을 True로 주어서 계수 눈으로 확인. cmap옵션으로 단색으로 설정
-plt.show()
+```python
+df_corr = df.corr()
+sns.heatmap(data=df_corr, annot=True, cmap="Blues_r")
 ```
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/5.png)
 
-모든 지표들을 히트맵으로 찍어봤습니다. 저 MEDV에 유의미한 상관관계( 절대값 0.6이상)를 가지는 것은 RM과 LSTAT이네요. CAT. MEDV는 MEDV가 30이상인 row엔 1을, 그렇지 않은 경우는 0을 넣었습니다. 따라서 MEDV에 대한 2차 지표로서 당연히 관계가 있을 수 밖에 없습니다.
+| MEDV와 유의미한 상관(|r|≥0.6) | 의미 |
+|------|------|
+| **RM** | 방 개수(+) |
+| **LSTAT** | 하위계층 밀집율(−) |
 
-지표를 보니 상업지역들이 범죄율도 높아서 집값에 부정적인 영향이 있을 것 같긴 하지만 역시 상업지역이라 집값이 높은 부분도 많았습니다. 따라서 저는 상권과 비상권 지역으로 나누어서 다시 상관관계를 살펴보고 싶었습니다. 왜냐하면 부동산의 가격이 그 지역의 성질에 따라 영향을 받는 지표도 다른데 다 섞어서 한번에 보면 놓칠 수 있는 부분이 생길거라 생각했습니다.
+> 💡 `CAT. MEDV`는 MEDV가 30 이상이면 1인 **2차 파생 지표**라 MEDV와 상관이 높은 게 당연하다. 이런 파생 변수는 상관 분석에서 걸러 봐야 진짜 요인을 찾을 수 있다.
 
-```
-plt.figure(figsize=(8,6))
-sns.histplot(data=df,x="INDUS") #15를 기준으로 데이터 분포 군집이 있으므로 15이상을 상권지역이라고 판단.
-plt.show()
+---
+
+## 3. 상권 vs 비상권으로 나눠보기
+
+부동산 가격은 **지역 성질에 따라 영향 요인이 다를 것**이라는 가설로, `INDUS`(상업 비율) 15를 기준으로 나눴다.
+
+```python
+sns.histplot(data=df, x="INDUS")   # 15 기준으로 두 군집
+df_low = df.loc[df['INDUS'] < 15]    # 비상권
+df_high = df.loc[df['INDUS'] >= 15]  # 상권
 ```
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/6.png)
 
-15를 기준으로 두 그룹으로 나누어봤습니다. 사실 나누는 것도 3분위나 4분위 지표를 구해서 하면 제일 좋았겠지만 이번엔 눈대중으로 해봤네요..ㅎㅎ..
-
-```
-# 비상권 지역 상관계수
-
-df_low_INDUS= df.loc[df['INDUS']<15]
-df_low_INDUS
-
-plt.figure(figsize=(10,10))
-df_low_INDUS_corr=df_low_INDUS.corr() 
-
-sns.heatmap(data=df_low_INDUS_corr, annot=True, cmap="Blues_r") 
-plt.show()
-```
-
-![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/7.png)
-
-비상권 지역의 상관계수 히트맵입니다. 역시 RM(방의 개수)와 LSTAT(하위계층 밀집율)에 영향을 받네요.. 여기서 괜히 나눴나 생각했는데..
-
-```
-# 상권지역 상관계수
-
-df_high_INDUS= df.loc[df['INDUS']>=15]
-df_high_INDUS
-
-plt.figure(figsize=(10,10))
-df_high_INDUS_corr=df_high_INDUS.corr() 
-
-sns.heatmap(data=df_high_INDUS_corr, annot=True, cmap="Blues_r") 
-plt.show()
-```
+| 지역 | 관찰 |
+|------|------|
+| **비상권** | 여전히 RM·LSTAT의 영향 |
+| **상권** | **RM의 영향이 다르게** 나타남 |
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/8.png)
 
-상권지역에서 다른 점이 보였습니다. 바로 RM인데요. 상권지역은 거주지역의 성격이 강하지 않고 부동산 가격이 비싸니까 잘게잘게 쪼개서 부동산 거래가 이루어지고 있나봅니다.(뇌피셜)
+> 💡 데이터를 **하위 그룹으로 쪼개면 전체에서 안 보이던 차이**가 드러난다(심슨의 역설 회피). 다만 눈대중(15)보다는 **분위수(quantile)**로 나누는 게 더 객관적이다.
 
-#### **CAT. MEDV 에 따른 상관관계**
+---
 
-아까는 상권으로 나눴는데 이번엔 CAT. MEDV로 나눠보겠습니다!
+## 4. 가격대(CAT. MEDV)별 분석
 
-```
-# CAT. MEDV가 1일 때
-df_cat_1= df.loc[df["CAT. MEDV"]==1]
-df_cat_1
-
-plt.figure(figsize=(10,10))
-df_cat_1_corr=df_cat_1.corr() 
-
-sns.heatmap(data=df_cat_1_corr, annot=True, cmap="Blues_r") 
-plt.show()
+```python
+df_cat_1 = df.loc[df["CAT. MEDV"] == 1]   # 3만 달러 이상
+df_cat_0 = df.loc[df["CAT. MEDV"] == 0]   # 3만 달러 미만
 ```
 
-![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/9.png)
+| 가격대 | 결과 |
+|------|------|
+| **고가(≥3만)** | 집값에 크게 영향 주는 지표 **없음** |
+| **저가(<3만)** | 여러 지표가 영향 |
 
-CAT. MEDV가 1일 때, 즉 3만달러가 넘는 지역에선 집값에 크게 영향을 주는 지표는 없었습니다.
-
-```
-# CAT. MEDV가 0 일 때
-df_cat_0= df.loc[df["CAT. MEDV"]==0]
-df_cat_0
-
-plt.figure(figsize=(10,10))
-df_cat_0_corr=df_cat_0.corr() 
-
-sns.heatmap(data=df_cat_0_corr, annot=True, cmap="Blues_r") 
-plt.show()
-```
-
-![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/10.png)
-
-이번엔 그 지수가 0일때, 3만달러 미만의 부동산에는 여러가지 지표들이 영향을 끼친다는 사실을 알았습니다.
-
-```
-plt.figure(figsize=(8,6))
-
-plt.subplot(2,2,1)
-sns.scatterplot(data= df_cat_0, x="CRIM", y="MEDV")
-
-plt.subplot(2,2,2)
-sns.scatterplot(data= df_cat_0, x="NOX", y="MEDV")
-
-plt.subplot(2,2,3)
-sns.scatterplot(data= df_cat_0, x="AGE", y="MEDV")
-
-plt.subplot(2,2,4)
-sns.scatterplot(data= df_cat_0, x="TAX", y="MEDV")
-
-
-
-plt.show()
-```
+저가 구간에서 영향 큰 4개(CRIM·NOX·AGE·TAX)를 산점도로 살펴봤지만 뚜렷한 방향은 안 보였다.
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Boston/11.png)
 
-그중 영향이 큰 것 4개를 뽑아서 subplot으로 각각 살펴봤습니다. 그래프를 보니 뚜렷한 방향은 나타나지 않았군요..
+> 💡 **고가 주택은 가격 결정 요인이 복잡·개별적**이라 단순 지표로 설명되지 않는 반면, 저가 주택은 범죄율·세금 등 여러 환경 요인에 민감하다. 가격대를 나눴기에 발견한 인사이트다.
 
-혼자 해본 EDA였지만 재밌게 해봤습니다 ㅎㅎ
+---
+
+## 📝 정리
+
+```
+보스턴 부동산 EDA
+├─ 목표     MEDV(집값) 영향 요인 찾기
+├─ 핵심지표 RM(+)·LSTAT(-) (상관 0.6↑)
+├─ 세분화   상권/비상권, 가격대별로 나눠 관찰
+└─ 발견     저가는 환경요인 민감, 고가는 요인 불명확
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **상관 히트맵** | 변수 간 관계 시각화 |
+| **그룹 분할** | 하위 집단별 패턴 발견 |
+| **파생 지표** | 상관 분석에서 제외 |
+
+보스턴 EDA의 핵심은 **전체 상관관계에서 시작해, 데이터를 의미 있는 그룹으로 쪼개 숨은 패턴을 찾는 것**이다. 상권/가격대 분할로 "저가 주택은 환경에 민감, 고가는 요인이 복잡"이라는 인사이트를 얻었다.

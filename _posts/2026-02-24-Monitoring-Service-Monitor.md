@@ -4,589 +4,190 @@ date: 2026-02-24 00:00:00 +0900
 categories: [Infra, Monitoring]
 tags: [prometheus, servicemonitor, prometheus-operator, kubernetes, monitoring, grafana, relabeling, rbac]
 render_with_liquid: false
+mermaid: true
 ---
 
-# ServiceMonitor
+## 📌 들어가며
 
-## 1. 개요
+이번 글에서는 Prometheus가 모니터링 대상을 **자동으로 발견**하게 해주는 **ServiceMonitor**를 정리한다. Prometheus 설정 파일을 직접 고치지 않고, YAML 선언만으로 타겟을 관리하는 방식이다. 기본 구조부터 Relabeling·Spring Boot 연동·트러블슈팅까지 다룬다.
 
-**한 줄 요약**: Prometheus Operator가 모니터링 대상을 자동으로 발견하고 메트릭을 수집하기 위한 CRD (Custom Resource Definition)
+> **ServiceMonitor란?** Prometheus Operator가 **모니터링 대상을 자동 발견·수집**하기 위한 **CRD**. ServiceMonitor를 만들면 Operator가 이를 감지해 **Prometheus 설정을 자동 업데이트(Hot Reload)**하고, Service의 Endpoint를 스크래핑한다.
 
-**언제 사용하나**:
-- Prometheus에서 특정 Service의 메트릭을 자동으로 수집하고 싶을 때
-- 애플리케이션 배포 시 모니터링 설정을 자동화할 때
-- Prometheus 설정 파일을 직접 수정하지 않고 선언적으로 타겟을 관리할 때
-
-**동작 흐름**:
-
-```
-ServiceMonitor 생성
-  → Prometheus Operator 감지
-  → Prometheus 설정 자동 업데이트 (Hot Reload)
-  → Service Endpoint 스크래핑
-```
-
-**구성 요소 관계**:
-
-```
-ServiceMonitor (CRD)
-  → Service (Label Selector로 탐색)
-  → Endpoint (Pod)
-  → Metrics Endpoint
+```mermaid
+flowchart LR
+    SM["ServiceMonitor(CRD)"] --> Op["Prometheus Operator<br/>(Watch)"]
+    Op --> Cfg["Prometheus 설정<br/>자동 업데이트(Hot Reload)"]
+    Cfg --> Ep["Service Endpoint 스크래핑"]
 ```
 
 ---
 
-## 2. 핵심 개념
+## 1. 핵심 개념
 
-### 2.1. Prometheus Operator의 역할
+### Operator의 역할
 
-- ServiceMonitor, PodMonitor, PrometheusRule 등 CRD 관리
-- ServiceMonitor를 Watch하여 Prometheus 설정 파일 자동 생성/업데이트
-- Prometheus Pod 재시작 없이 Hot Reload
+ServiceMonitor·PodMonitor·PrometheusRule 같은 CRD를 Watch하며, **Prometheus Pod 재시작 없이** 설정을 반영한다.
 
-### 2.2. ServiceMonitor vs PodMonitor
+### ServiceMonitor vs PodMonitor
 
-| 항목 | ServiceMonitor | PodMonitor |
-|------|----------------|------------|
-| **타겟** | Service → Endpoint | Pod 직접 |
-| **사용 시기** | Service가 있는 경우 (일반적) | Service 없이 Pod만 모니터링 |
-| **장점** | Service 기반 로드밸런싱 | Pod 직접 접근, 더 유연 |
-| **예시** | 웹 애플리케이션, API 서버 | StatefulSet, DaemonSet |
+| 항목 | **ServiceMonitor** | **PodMonitor** |
+|------|--------------------|----------------|
+| 타겟 | Service → Endpoint | Pod 직접 |
+| 사용 | Service가 있는 경우(일반) | Service 없이 Pod만 |
+| 예 | 웹앱·API 서버 | StatefulSet·DaemonSet |
 
-### 2.3. 주요 특징
-
-- **자동 서비스 디스커버리**: Label Selector로 Service 자동 탐색
-- **선언적 설정**: YAML로 모니터링 대상 정의
-- **네임스페이스 격리**: 네임스페이스별로 ServiceMonitor 관리 가능
-- **동적 업데이트**: ServiceMonitor 변경 시 자동 반영
+> 💡 **선언적 설정이 핵심**이다. 예전엔 Prometheus 설정 파일에 타겟을 직접 적었지만, ServiceMonitor는 앱 배포 시 **모니터링도 YAML로 함께 선언**해 자동화한다. 앱이 늘어도 설정을 손댈 필요가 없다.
 
 ---
 
-## 3. 기본 명령어
+## 2. 기본 구조 — Label로 연결
 
-```bash
-# ServiceMonitor 목록 조회
-kubectl get servicemonitor -n <namespace>
-
-# ServiceMonitor 상세 확인
-kubectl describe servicemonitor <name> -n <namespace>
-
-# ServiceMonitor YAML 확인
-kubectl get servicemonitor <name> -n <namespace> -o yaml
-
-# Prometheus Operator가 ServiceMonitor를 인식했는지 확인
-kubectl logs -n monitoring prometheus-operator-<pod-name> | grep -i servicemonitor
-
-# ServiceMonitor가 참조하는 Service 확인
-kubectl get svc -n <namespace> -l <label-selector>
-
-# Prometheus UI에서 타겟 확인
-# http://<prometheus-url>/targets
-```
-
-출력 예시:
-
-```
-NAME                      AGE
-kube-state-metrics        5d
-node-exporter             5d
-my-app-monitor            2h
-```
-
----
-
-## 4. 실무 패턴
-
-### 4.1. 기본 ServiceMonitor 구조
+ServiceMonitor의 `selector`와 Service의 `labels`, `endpoints.port`와 Service의 `ports.name`이 **반드시 일치**해야 한다.
 
 ```yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: my-app-monitor
-  namespace: default
   labels:
-    app: my-app
-    prometheus: kube-prometheus  # Prometheus가 선택할 Label
+    prometheus: kube-prometheus   # Prometheus가 선택할 Label
 spec:
-  # 모니터링할 Service 선택 (Label 기반)
   selector:
     matchLabels:
-      app: my-app
-
-  # 모니터링할 네임스페이스 (생략 시 자신의 네임스페이스만)
+      app: my-app                 # ← Service의 label과 일치
   namespaceSelector:
-    matchNames:
-    - default
-
-  # 메트릭 수집 엔드포인트 정의
+    matchNames: [default]
   endpoints:
-  - port: metrics        # Service의 포트 이름
-    interval: 30s        # 스크래핑 주기
-    path: /metrics       # 메트릭 경로
-    scheme: http         # http 또는 https
+  - port: metrics                 # ← Service의 port name과 일치
+    interval: 30s
+    path: /metrics
 ```
-
-**대응되는 Service**:
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: my-app-service
-  namespace: default
   labels:
-    app: my-app         # ServiceMonitor의 selector와 반드시 일치
+    app: my-app                   # ← selector와 일치
 spec:
-  selector:
-    app: my-app
   ports:
-  - name: metrics        # ServiceMonitor의 endpoints.port와 반드시 일치
+  - name: metrics                 # ← endpoints.port와 일치
     port: 8080
     targetPort: 8080
-  - name: http
-    port: 80
-    targetPort: 8080
 ```
 
-### 4.2. 여러 엔드포인트 모니터링
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: multi-port-monitor
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app: complex-app
-  endpoints:
-  - port: app-metrics      # 애플리케이션 메트릭
-    interval: 30s
-    path: /metrics
-  - port: jvm-metrics      # JVM 메트릭
-    interval: 60s
-    path: /actuator/prometheus
-  - port: custom-metrics   # 커스텀 메트릭
-    interval: 15s
-    path: /custom/metrics
+```mermaid
+flowchart LR
+    SM["ServiceMonitor<br/>selector: app=my-app<br/>port: metrics"]
+    Svc["Service<br/>labels: app=my-app<br/>port name: metrics"]
+    SM -- "Label 매칭" --> Svc --> Pod["Pod /metrics"]
 ```
 
-**대응되는 Service**:
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: complex-app-service
-  namespace: default
-  labels:
-    app: complex-app
-spec:
-  selector:
-    app: complex-app
-  ports:
-  - name: app-metrics
-    port: 9090
-    targetPort: 9090
-  - name: jvm-metrics
-    port: 9091
-    targetPort: 9091
-  - name: custom-metrics
-    port: 9092
-    targetPort: 9092
-```
-
-### 4.3. 여러 네임스페이스 모니터링
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: cross-namespace-monitor
-  namespace: monitoring
-  labels:
-    prometheus: kube-prometheus
-spec:
-  selector:
-    matchLabels:
-      monitoring: "true"  # 이 Label을 가진 모든 Service 모니터링
-
-  # 여러 네임스페이스 지정
-  namespaceSelector:
-    matchNames:
-    - default
-    - production
-    - staging
-
-  endpoints:
-  - port: metrics
-    interval: 30s
-    path: /metrics
-```
-
-**각 네임스페이스의 Service에 Label 추가**:
-
-```yaml
-metadata:
-  labels:
-    monitoring: "true"  # 이 Label이 있으면 자동으로 수집 대상에 포함
-```
-
-### 4.4. Relabeling 및 메트릭 필터링
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: advanced-monitor
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app: my-app
-  endpoints:
-  - port: metrics
-    interval: 30s
-    path: /metrics
-
-    # Relabeling: 스크래핑 전 Label 추가/수정/삭제
-    relabelings:
-    # Kubernetes Label을 Prometheus Label로 추가
-    - sourceLabels: [__meta_kubernetes_pod_name]
-      targetLabel: pod_name
-
-    # 특정 환경만 수집 (production만 keep)
-    - sourceLabels: [__meta_kubernetes_pod_label_environment]
-      regex: production
-      action: keep
-
-    # Label 이름 변경
-    - sourceLabels: [__meta_kubernetes_namespace]
-      targetLabel: namespace
-
-    # Metric Relabeling: 수집 후 처리
-    metricRelabelings:
-    # 특정 메트릭만 유지
-    - sourceLabels: [__name__]
-      regex: "(http_requests_total|http_request_duration_seconds.*)"
-      action: keep
-
-    # 불필요한 Label 제거
-    - regex: "pod_template_hash"
-      action: labeldrop
-```
-
-### 4.5. HTTPS 및 인증 엔드포인트
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: secure-monitor
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app: secure-app
-  endpoints:
-  - port: metrics
-    interval: 30s
-    path: /metrics
-    scheme: https
-
-    # TLS 설정
-    tlsConfig:
-      ca:
-        secret:
-          name: prometheus-ca
-          key: ca.crt
-      insecureSkipVerify: false  # 운영 환경은 false 유지
-
-    # Basic Auth
-    basicAuth:
-      username:
-        name: prometheus-auth
-        key: username
-      password:
-        name: prometheus-auth
-        key: password
-```
-
-```bash
-# 필요한 Secret 생성
-kubectl create secret generic prometheus-auth \
-  --from-literal=username=prometheus \
-  --from-literal=password=secret123 \
-  -n default
-
-kubectl create secret generic prometheus-ca \
-  --from-file=ca.crt=/path/to/ca.crt \
-  -n default
-```
-
-### 4.6. Spring Boot Actuator 연동 예시
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: spring-app-service
-  namespace: default
-  labels:
-    app: spring-app
-    monitoring: enabled
-spec:
-  selector:
-    app: spring-app
-  ports:
-  - name: http
-    port: 8080
-    targetPort: 8080
-  - name: actuator       # Actuator 전용 포트
-    port: 8081
-    targetPort: 8081
 ---
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: spring-app-monitor
-  namespace: default
-  labels:
-    prometheus: kube-prometheus
-spec:
-  selector:
-    matchLabels:
-      app: spring-app
-  endpoints:
-  - port: actuator
-    interval: 15s
-    path: /actuator/prometheus   # Spring Boot Actuator 경로
-    relabelings:
-    - sourceLabels: [__meta_kubernetes_service_label_app]
-      targetLabel: application
-    - sourceLabels: [__meta_kubernetes_namespace]
-      targetLabel: kubernetes_namespace
-```
 
-**Spring Boot `application.yml`**:
+## 3. 주요 패턴
+
+| 패턴 | 방법 |
+|------|------|
+| **여러 엔드포인트** | `endpoints`에 포트별(app/jvm/custom) 여러 항목 |
+| **여러 네임스페이스** | `namespaceSelector.matchNames`에 나열 + Service에 공통 label(`monitoring: "true"`) |
+| **HTTPS/인증** | `scheme: https` + `tlsConfig` + `basicAuth`(Secret 참조) |
+
+### Relabeling — Label 가공 & 메트릭 필터
 
 ```yaml
+endpoints:
+- port: metrics
+  relabelings:                    # 스크래핑 전 Label 가공
+  - sourceLabels: [__meta_kubernetes_pod_label_environment]
+    regex: production
+    action: keep                  # production만 수집
+  metricRelabelings:              # 수집 후 처리
+  - sourceLabels: [__name__]
+    regex: "(http_requests_total|http_request_duration_seconds.*)"
+    action: keep                  # 특정 메트릭만 유지
+  - regex: "pod_template_hash"
+    action: labeldrop             # 불필요 Label 제거
+```
+
+> 💡 **relabelings(수집 전) vs metricRelabelings(수집 후)** — 전자는 어떤 타겟을 스크래핑할지·어떤 Label을 붙일지 결정하고, 후자는 이미 가져온 메트릭 중 무엇을 저장할지 거른다. `metricRelabelings`로 불필요한 메트릭을 버리면 **스토리지가 크게 절약**된다.
+
+### Spring Boot Actuator 연동
+
+```yaml
+# ServiceMonitor
+endpoints:
+- port: actuator
+  interval: 15s
+  path: /actuator/prometheus      # Actuator 경로
+```
+
+```yaml
+# application.yml
 management:
   endpoints:
     web:
       exposure:
         include: prometheus,health,info
-  metrics:
-    export:
-      prometheus:
-        enabled: true
   server:
-    port: 8081    # Actuator 전용 포트
+    port: 8081                     # Actuator 전용 포트
 ```
 
 ---
 
-## 5. 트러블슈팅
+## 4. 트러블슈팅 — 흔한 실수
 
-### 5.1. 흔한 실수 7가지
-
-**1. ServiceMonitor와 Service의 Label 불일치**
-
-```
-❌ ServiceMonitor selector: app=my-app
-   Service labels:          application=my-app
-→ Prometheus가 Service를 발견하지 못함
-
-✅ Label 정확히 일치시키기
-   kubectl get svc -n <namespace> --show-labels  # Label 확인 후 맞추기
-```
-
-**2. Service 포트 이름 불일치**
-
-```
-❌ ServiceMonitor endpoints.port: metrics
-   Service ports.name:           http
-→ Prometheus가 포트를 찾지 못함
-
-✅ 포트 이름 일치 또는 포트 번호로 직접 지정
-   endpoints:
-   - port: 8080    # 이름 대신 번호로 지정
-```
-
-**3. Prometheus가 ServiceMonitor를 선택하지 못함**
-
-```
-❌ ServiceMonitor labels:            app=my-app
-   Prometheus serviceMonitorSelector: team=backend
-→ Prometheus가 ServiceMonitor를 무시
-
-✅ Prometheus CRD에서 serviceMonitorSelector 확인
-   kubectl get prometheus -n monitoring -o yaml
-```
-
-**4. 네임스페이스 접근 권한 없음**
-
-```
-❌ 다른 네임스페이스 Service를 모니터링하려 했지만
-   Prometheus ServiceAccount에 해당 네임스페이스 RBAC 권한 없음
-→ Service를 발견하지 못함
-
-✅ Prometheus ServiceAccount에 권한 부여
-```
-
-**5. 메트릭 엔드포인트 경로 오류**
-
-```
-❌ endpoints.path: /metrics
-   실제 애플리케이션:  /actuator/prometheus
-→ HTTP 404 에러, 메트릭 수집 실패
-
-✅ 실제 경로 확인 후 설정
-   kubectl exec -it <pod-name> -n <namespace> -- curl localhost:8080/actuator/prometheus
-```
-
-**6. interval이 너무 짧음**
-
-```
-❌ interval: 1s
-→ Prometheus 과부하, 스토리지 급증
-
-✅ 15s ~ 60s 권장 (애플리케이션 중요도에 따라 조정)
-```
-
-**7. prometheus-operator 로그 미확인**
-
-```
-❌ ServiceMonitor 생성했는데 타겟에 안 보임
-→ Operator에서 에러 발생 중임에도 로그 미확인
-
-✅ Operator 로그 최우선 확인
-   kubectl logs -n monitoring prometheus-operator-<pod> | grep -i error
-```
-
-### 5.2. prometheus-operator 트러블슈팅 명령어
+> ⚠️ **7대 실수** — ① **ServiceMonitor selector ↔ Service label 불일치**(가장 흔함), ② **포트 이름 불일치**, ③ Prometheus의 `serviceMonitorSelector`가 이 ServiceMonitor를 선택 안 함, ④ 다른 NS 접근 **RBAC 권한 없음**, ⑤ 메트릭 **경로 오류**(/metrics vs /actuator/prometheus), ⑥ **interval 너무 짧음**(과부하), ⑦ **Operator 로그 미확인**.
 
 ```bash
-# 1. prometheus-operator Pod 상태 확인
-kubectl get pods -n monitoring | grep prometheus-operator
-
-# 2. ServiceMonitor 관련 에러 확인
-kubectl logs -n monitoring prometheus-operator-<pod-name> | grep -i servicemonitor
-kubectl logs -n monitoring prometheus-operator-<pod-name> | grep -i error
-
-# 흔한 에러 메시지:
-# - "unable to sync ServiceMonitor"       → RBAC 권한 문제
-# - "selector does not match any services" → Label 불일치
-# - "endpoints not found"                 → Service에 해당 포트 없음
-
-# 3. Prometheus 내부 설정에 반영되었는지 확인
-kubectl exec -it -n monitoring prometheus-k8s-0 -- sh
-cat /etc/prometheus/config_out/prometheus.env.yaml | grep -A 10 my-app
-
-# 4. Prometheus의 serviceMonitorSelector 확인
-kubectl get prometheus -n monitoring kube-prometheus -o yaml | grep -A 5 serviceMonitorSelector
-
-# 5. Prometheus UI에서 타겟 확인 (포트 포워딩)
-kubectl port-forward -n monitoring svc/prometheus-k8s 9090:9090
-# 브라우저: http://localhost:9090/targets
-
-# 6. ServiceMonitor YAML 사전 검증
-kubectl apply --dry-run=client -f servicemonitor.yaml
-
-# 7. ServiceMonitor 처리 이벤트 확인
-kubectl get events -n monitoring | grep ServiceMonitor
-
-# 8. Service Endpoint 생성 여부 확인 (없으면 Pod Selector 문제)
-kubectl get endpoints <service-name> -n <namespace>
+# 진단 순서
+kubectl get svc -n <ns> --show-labels                     # ① label 확인
+kubectl get servicemonitor <name> -o yaml | grep -A5 selector  # ② selector 확인
+kubectl get endpoints <svc> -n <ns>                       # ③ Endpoint 생성?
+kubectl exec -it <pod> -- curl localhost:8080/metrics     # ④ 메트릭 경로 확인
+kubectl logs -n monitoring prometheus-operator-<pod> | grep -i error  # ⑤ Operator 에러
+# Prometheus UI: http://<url>/targets 에서 up{job="<svc>"} 확인
 ```
 
-### 5.3. ServiceMonitor 생성 후 확인 순서
-
-```bash
-# Step 1: ServiceMonitor 생성 확인
-kubectl get servicemonitor <name> -n <namespace>
-
-# Step 2: prometheus-operator 로그 확인
-kubectl logs -n monitoring prometheus-operator-<pod> | tail -50
-
-# Step 3: Prometheus UI에서 타겟 확인
-# http://<prometheus-url>/targets
-
-# Step 4: 메트릭 수집 확인 (Prometheus Graph)
-up{job="<service-name>"}
-```
-
-### 5.4. 타겟이 안 보일 때 빠른 디버깅
-
-```bash
-# Service Label 확인
-kubectl get svc -n <namespace> --show-labels
-
-# ServiceMonitor selector 확인
-kubectl get servicemonitor <name> -n <namespace> -o yaml | grep -A 5 selector
-
-# Service Endpoint 확인
-kubectl get endpoints <service-name> -n <namespace>
-
-# Pod 메트릭 엔드포인트 직접 확인
-kubectl exec -it <pod-name> -n <namespace> -- curl localhost:8080/metrics
-```
-
-### 5.5. CrashLoopBackOff 대응
-
-```bash
-# 1. CrashLoopBackOff 상태 확인
-kubectl get pods -n monitoring prometheus-operator-<pod>
-
-# 2. 이전 로그 확인
-kubectl logs -n monitoring prometheus-operator-<pod> --previous
-
-# 3. ServiceMonitor 문법 오류 확인
-kubectl apply --validate=true --dry-run=client -f servicemonitor.yaml
-
-# 4. RBAC 권한 부족 확인
-kubectl get clusterrole prometheus-operator -o yaml
-
-# 5. Prometheus의 serviceMonitorSelector 확인
-kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitorSelector}'
-
-# 6. 문제가 되는 ServiceMonitor 삭제 후 Operator 정상화 확인
-kubectl delete servicemonitor <problematic-monitor> -n <namespace>
-kubectl get pods -n monitoring prometheus-operator-<pod>
-```
+> 💡 **타겟이 안 보이면 Label 매칭부터** 의심하자. `selector: app=my-app`인데 Service가 `application=my-app`이면 Prometheus는 영영 발견하지 못한다. `--show-labels`로 실제 값을 눈으로 대조하는 것이 가장 빠르다.
 
 ---
 
-## 6. HyperCloud 환경 참고사항
+## 5. 운영 참고
 
-- `monitoring` 네임스페이스에 Prometheus Operator 배포됨
-- Prometheus Operator 버전: K8s 1.21 기준 0.50+ 권장
-- ServiceMonitor API: `monitoring.coreos.com/v1`
+**Grafana 연동 흐름**: `ServiceMonitor → Prometheus(저장) → Grafana(Data Source) → PromQL 대시보드`.
 
-**Grafana 연동 흐름**:
-
-```
-ServiceMonitor → Prometheus (메트릭 저장)
-              → Grafana (Data Source: Prometheus 연결)
-              → PromQL로 대시보드 구성
-```
-
-**금융권 환경 주의사항**:
-- 메트릭에 민감한 정보 노출 금지 (계좌번호, 개인정보 등)
-- 메트릭 엔드포인트는 내부망에서만 접근
-- `relabeling`으로 불필요한 Label 제거
-
-**성능 최적화**:
-- `interval`: 애플리케이션 중요도에 따라 15s ~ 60s로 조정
-- `metricRelabelings`으로 불필요한 메트릭 필터링
-- Prometheus Retention 기간 적절히 설정 (기본 15일)
+| 항목 | 권장 |
+|------|------|
+| `interval` | 중요도에 따라 **15s~60s** |
+| 메트릭 필터 | `metricRelabelings`로 불필요 제거 |
+| 보안(금융권) | 민감정보 노출 금지·내부망만 접근·불필요 Label 제거 |
+| API 버전 | `monitoring.coreos.com/v1` |
 
 ---
 
-## 참고 자료
+## 📝 정리
 
-- 공식 문서: <https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.ServiceMonitor>
-- Prometheus Operator GitHub: <https://github.com/prometheus-operator/prometheus-operator>
+```
+ServiceMonitor
+├─ 개념   Prometheus 타겟 자동 발견 CRD(Hot Reload)
+├─ 연결   selector↔label, port명 일치 필수
+├─ 가공   relabelings(수집전)·metricRelabelings(수집후)
+├─ 연동   Spring Actuator(/actuator/prometheus)
+└─ 함정   Label/포트 불일치 → 타겟 안 보임
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **ServiceMonitor** | 선언적 모니터링 타겟 |
+| **Label 매칭** | selector ↔ Service label |
+| **Relabeling** | Label·메트릭 가공/필터 |
+
+ServiceMonitor의 핵심은 **YAML 선언만으로 Prometheus 타겟을 자동 관리**하는 것이다. 대부분의 문제는 **Label·포트 이름 불일치**에서 오므로, 타겟이 안 보이면 이 매칭부터 확인하는 것이 정석이다.
+
+---
+
+## 🔗 참고
+
+- [ServiceMonitor 공식 문서](https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.ServiceMonitor)

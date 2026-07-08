@@ -4,333 +4,171 @@ date: 2026-02-24 00:00:00 +0900
 categories: [Infra, Monitoring]
 tags: [prometheus, promql, kubernetes, monitoring, tcp, cpu, memory, network, traefik, api-server]
 render_with_liquid: false
+mermaid: true
 ---
 
-# Prometheus PromQL 쿼리 모음
+## 📌 들어가며
 
-TCP Reset 분석 및 Kubernetes 트러블슈팅 과정에서 실제로 사용한 Prometheus 지표를 목적별로 정리한 레퍼런스입니다.
+이번 글에서는 **TCP Reset 분석과 쿠버네티스 트러블슈팅**에서 실제로 쓴 **PromQL 쿼리**를 목적별로 정리한다. TCP·리소스·네트워크·API Server 지표부터, 실제 Traefik CPU Throttling 장애 분석 사례와 단계별 체크리스트까지 다룬다.
+
+> **왜 지표를 목적별로 묶나?** 장애가 나면 "무슨 쿼리를 던져야 할지"가 막막하다. **TCP → Pod → 리소스 → 네트워크 → 시스템** 순으로 정리해두면, 증상에서 원인으로 좁혀가는 진단 경로를 그대로 따라갈 수 있다.
 
 ---
 
-## 1. TCP Reset 관련 지표
-
-### 기본 TCP Reset 지표
+## 1. TCP Reset 지표
 
 ```promql
-# 노드에서 외부로 보낸 RST 패킷 (송신)
-rate(node_netstat_Tcp_OutRsts[5m])
-
-# 노드가 받은 TCP 에러 패킷 (수신)
-rate(node_netstat_Tcp_InErrs[5m])
+rate(node_netstat_Tcp_OutRsts[5m])   # 송신 RST
+rate(node_netstat_Tcp_InErrs[5m])    # 수신 에러
+node_netstat_Tcp_CurrEstab           # ESTABLISHED 연결 수
+rate(node_netstat_Tcp_RetransSegs[5m])   # 재전송
+node_nf_conntrack_entries / node_nf_conntrack_entries_limit * 100  # conntrack 사용률
 ```
 
-**수치 해석:**
-
 | 지표 | 정상 | 주의 | 비정상 |
-|------|------|------|--------|
+|------|:---:|:---:|:---:|
 | `OutRsts` | 0~1 | 1~10 | 10+ |
 | `InErrs` | 0 | 0.01~0.1 | 0.1+ |
 
-**패턴별 의미:**
-
-- `OutRsts` 높음 + `InErrs` 낮음 → 애플리케이션 문제
-- `OutRsts` 낮음 + `InErrs` 높음 → 네트워크 문제
-- 둘 다 높음 → 전체 시스템 과부하
-
-### TCP 연결 수 및 재전송
-
-```promql
-# 노드별 ESTABLISHED 연결 수
-node_netstat_Tcp_CurrEstab
-
-# TCP 재전송 (초당 재전송 세그먼트 수)
-rate(node_netstat_Tcp_RetransSegs[5m])
-
-# Connection Tracking 사용률 (70% 이하 정상)
-node_nf_conntrack_entries / node_nf_conntrack_entries_limit * 100
-```
+> 💡 **OutRsts vs InErrs 패턴 해석** — OutRsts↑ + InErrs↓ = **애플리케이션 문제**, OutRsts↓ + InErrs↑ = **네트워크 문제**, 둘 다↑ = **전체 과부하**. 두 지표의 조합만으로 원인 방향을 잡을 수 있다.
 
 ---
 
-## 2. Pod / Container 기본 트러블슈팅 지표
-
-### Pod 재시작
+## 2. Pod / Container 지표
 
 ```promql
+# 재시작 (0 정상, 0.01+ 재시작 중)
 sum(rate(kube_pod_container_status_restarts_total[5m])) by (namespace, pod)
-```
 
-- `0`: 정상
-- `0.01+`: 재시작 발생 중
-
-### Pod 상태 (Non-Running)
-
-```promql
+# Non-Running 상태 (Pending/Failed/Unknown)
 kube_pod_status_phase{phase!="Running"}
-```
 
-Pending / Failed / Unknown 상태 Pod 확인
-
-### Container 종료 이유
-
-```promql
+# 컨테이너 종료 이유 (OOMKilled/Error/Completed)
 kube_pod_container_status_last_terminated_reason
-```
 
-주요 값: `OOMKilled`, `Error`, `Completed`
-
-### 네트워크 패킷 드롭
-
-```promql
-# 송신 패킷 드롭
-rate(container_network_transmit_packets_dropped_total[5m])
-
-# 수신 패킷 드롭
+# 네트워크 패킷 드롭 (0.1+ 문제)
 rate(container_network_receive_packets_dropped_total[5m])
-
-# 노드 수신 패킷 드롭 (인터페이스 레벨)
-rate(node_network_receive_drop_total[5m])
 ```
-
-- `0~0.01`: 정상
-- `0.1+`: 네트워크 문제
 
 ---
 
-## 3. 리소스 사용률 지표
+## 3. 리소스 사용률 (핵심)
 
-### CPU Throttling (핵심 지표!)
+### CPU Throttling — 가장 중요한 지표
 
 ```promql
-# 전체
 rate(container_cpu_cfs_throttled_seconds_total[5m])
-
-# 특정 Pod 필터
-rate(container_cpu_cfs_throttled_seconds_total{pod=~"traefik.*"}[5m])
-
-# Pod별 상위 10개
-topk(10, rate(container_cpu_cfs_throttled_seconds_total[5m]))
+topk(10, rate(container_cpu_cfs_throttled_seconds_total[5m]))   # 상위 10개
 ```
 
 | 수치 | 상태 |
-|------|------|
+|:---:|------|
 | 0 | 정상 |
 | 0.01~0.1 | 주의 |
 | 0.1~1 | 비정상 |
-| 1+ | 심각 |
+| 1+ | **심각** |
 
-### CPU 사용률
-
-```promql
-# millicores 단위
-sum(rate(container_cpu_usage_seconds_total{pod=~"traefik.*"}[5m])) * 1000
-
-# 퍼센트 (limit 대비)
-sum(rate(container_cpu_usage_seconds_total{pod=~"traefik.*"}[5m])) /
-sum(container_spec_cpu_quota{pod=~"traefik.*"} / container_spec_cpu_period{pod=~"traefik.*"}) * 100
-
-# 네임스페이스별 상위 10개
-topk(10,
-  sum by (namespace) (
-    rate(container_cpu_usage_seconds_total{namespace!~"kube-system|monitoring"}[5m])
-  )
-)
-```
-
-### Memory 사용률
+### Memory / File Descriptor
 
 ```promql
-container_memory_usage_bytes / container_spec_memory_limit_bytes * 100
+container_memory_usage_bytes / container_spec_memory_limit_bytes * 100   # 90%+ 위험
+process_open_fds / process_max_fds * 100                                 # 80%+ 위험
 ```
 
-| 수치 | 상태 |
-|------|------|
-| 0~70% | 정상 |
-| 70~90% | 주의 |
-| 90%+ | 위험 |
-
-### File Descriptor 사용률
-
-```promql
-process_open_fds / process_max_fds * 100
-```
-
-| 수치 | 상태 |
-|------|------|
-| 0~60% | 정상 |
-| 60~80% | 주의 |
-| 80%+ | 위험 |
+> ⚠️ **CPU Throttling은 "사용률이 낮아도" 성능 문제를 일으킨다.** CPU limit에 자주 부딪히면 요청이 지연되는데, 이건 사용률(%) 지표에는 잘 안 드러난다. 지연·타임아웃 장애 시 **Throttling을 최우선**으로 확인해야 하는 이유다.
 
 ---
 
-## 4. 네트워크 트래픽 지표
-
-### 수신/송신 트래픽
+## 4. 네트워크 & API Server
 
 ```promql
-# 수신 (bytes/sec)
+# 트래픽 (bytes/sec)
 sum(rate(container_network_receive_bytes_total{pod=~"traefik.*"}[5m]))
 
-# 송신 (bytes/sec)
-sum(rate(container_network_transmit_bytes_total{pod=~"traefik.*"}[5m]))
-```
+# API Server P99 응답 시간 (ms) — <100 정상, >500 비정상
+histogram_quantile(0.99, rate(apiserver_request_duration_seconds_bucket[5m])) * 1000
 
----
-
-## 5. Kubernetes API Server 지표
-
-### API 요청 처리 시간
-
-```promql
-# 전체 P99 응답 시간 (ms)
-histogram_quantile(0.99,
-  rate(apiserver_request_duration_seconds_bucket[5m])
-) * 1000
-
-# SubjectAccessReview 전용 P99 (ms)
-histogram_quantile(0.99, rate(apiserver_request_duration_seconds_bucket{resource="subjectaccessreviews"}[5m]))
-```
-
-- 정상: `< 100ms`
-- 비정상: `> 500ms`
-
-### API 요청 실패율
-
-```promql
+# API 요청 실패율 (5xx) — <1% 정상
 rate(apiserver_request_total{code=~"5.."}[5m])
 ```
 
-- 정상: `< 1%`
-- 비정상: `> 5%`
+**Traefik 전용**(`--metrics.prometheus=true` 필요):
+
+```promql
+histogram_quantile(0.99, rate(traefik_service_request_duration_seconds_bucket[5m]))  # P99
+rate(traefik_service_requests_total{code=~"5.."}[5m])   # 5xx 에러율
+traefik_entrypoint_open_connections                     # 동시 연결
+```
 
 ---
 
-## 6. 노드별 / Pod별 집계 쿼리
+## 5. 집계 & 시간대 비교
 
 ```promql
-# 노드별 OutRsts 비교
+# 노드별 OutRsts
 sum(rate(node_netstat_Tcp_OutRsts[5m])) by (instance)
 
-# 네임스페이스별 CPU 사용률 Top 10
-topk(10,
-  sum by (namespace) (
-    rate(container_cpu_usage_seconds_total{namespace!~"kube-system|monitoring"}[5m])
-  )
-)
+# 네임스페이스별 CPU Top 10
+topk(10, sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace!~"kube-system|monitoring"}[5m])))
 
-# Pod별 CPU Throttling Top 10
-topk(10, rate(container_cpu_cfs_throttled_seconds_total[5m]))
+# 현재 vs 1시간 전
+rate(node_netstat_Tcp_OutRsts[5m]) / rate(node_netstat_Tcp_OutRsts[5m] offset 1h)
 ```
 
 ---
 
-## 7. 시간대별 비교 쿼리
+## 6. 실제 사례 — Traefik CPU Throttling
+
+> 2025-12-16 발화 지연 이슈 분석에 사용한 쿼리다.
 
 ```promql
-# 현재 vs 1시간 전 비율
-rate(node_netstat_Tcp_OutRsts[5m])
-  /
-rate(node_netstat_Tcp_OutRsts[5m]) offset 1h
-
-# 특정 시간대 추이 (30분간 1분 단위)
-rate(node_netstat_Tcp_OutRsts[5m])[30m:1m]
-```
-
----
-
-## 8. Traefik 전용 메트릭
-
-> `--metrics.prometheus=true` 옵션 활성화 필요
-
-```promql
-# 요청 처리 시간 P99
-histogram_quantile(0.99,
-  rate(traefik_service_request_duration_seconds_bucket[5m])
-)
-
-# 백엔드 5xx 에러율
-rate(traefik_service_requests_total{code=~"5.."}[5m])
-
-# 동시 연결 수
-traefik_entrypoint_open_connections
-
-# 진입점별 요청 수 (초당)
-sum(rate(traefik_entrypoint_requests_total[1m]))
-```
-
----
-
-## 9. 실제 케이스: Traefik CPU Throttling 분석
-
-> 2025-12-16 발화 지연 이슈 분석 시 사용한 쿼리
-
-### 문제 확인
-
-```promql
-# Traefik CPU Throttling → 결과: 4.xx (매우 심각)
+# ① Throttling → 결과: 4.xx (매우 심각)
 rate(container_cpu_cfs_throttled_seconds_total{pod=~"traefik.*"}[5m])
-
-# Traefik CPU 사용률 → 결과: 87%
-sum(rate(container_cpu_usage_seconds_total{pod=~"traefik.*", namespace="api-gateway-system"}[5m])) by (pod) /
-sum(container_spec_cpu_quota{pod=~"traefik.*", namespace="api-gateway-system"} / container_spec_cpu_period{pod=~"traefik.*"}) by (pod) * 100
-
-# 네트워크 트래픽 증가율 → 결과: +10% (소폭)
-sum(rate(container_network_receive_bytes_total{pod=~"traefik.*", namespace="api-gateway-system"}[5m]))
+# ② CPU 사용률 → 87%
+# ③ 트래픽 증가 → +10%(소폭)
 ```
 
-### 정상 확인 (이상 없음)
+**정상 확인(이상 없음):** Memory·패킷 드롭·FD·재시작 모두 정상.
 
-```promql
-# Memory 사용률
-sum(container_memory_usage_bytes{pod=~"traefik.*"}) by (pod) /
-sum(container_spec_memory_limit_bytes{pod=~"traefik.*"}) by (pod) * 100
-
-# 패킷 드롭
-rate(container_network_transmit_packets_dropped_total[5m])
-rate(container_network_receive_packets_dropped_total[5m])
-
-# File Descriptor
-process_open_fds / process_max_fds * 100
-
-# Pod 재시작
-sum(rate(kube_pod_container_status_restarts_total[5m])) by (namespace, pod)
-```
-
-**결론**: CPU Throttling이 원인 → CPU limit `300m → 1000m` 증가로 해결
+> 💡 **결론: CPU Throttling이 원인** → limit `300m → 1000m`으로 증가해 해결. 트래픽은 소폭 증가했는데 Throttling이 4를 넘었다는 건, limit이 너무 낮아 정상 부하도 못 견뎠다는 뜻이다. 사용률(87%)만 봤다면 놓쳤을 원인이다.
 
 ---
 
-## 10. 트러블슈팅 체크리스트
+## 7. 트러블슈팅 체크리스트
 
-### 1단계: TCP Reset 확인
+```mermaid
+flowchart LR
+    A["① TCP Reset<br/>OutRsts/InErrs"] --> B["② Pod<br/>재시작·상태·종료이유"]
+    B --> C["③ 리소스<br/>Throttling·CPU·Mem·FD"]
+    C --> D["④ 네트워크<br/>트래픽·재전송·conntrack"]
+    D --> E["⑤ 시스템<br/>API·집계·시간대"]
+```
 
-- [ ] `node_netstat_Tcp_OutRsts` 확인
-- [ ] `node_netstat_Tcp_InErrs` 확인
-- [ ] 노드별 분포 확인 (`by (instance)`)
+| 단계 | 핵심 지표 |
+|------|------|
+| ① TCP | OutRsts / InErrs / 노드별 분포 |
+| ② Pod | 재시작 / Non-Running / 종료 이유 / 드롭 |
+| ③ 리소스 | **CPU Throttling** / CPU / Mem / FD |
+| ④ 네트워크 | 트래픽 / 재전송 / conntrack |
+| ⑤ 시스템 | API 응답 / 집계 / 시간대 비교 |
 
-### 2단계: 기본 트러블슈팅
+---
 
-- [ ] Pod 재시작 횟수
-- [ ] Pod 상태 (Non-Running)
-- [ ] Container 종료 이유
-- [ ] 네트워크 패킷 드롭
+## 📝 정리
 
-### 3단계: 리소스 분석
+```
+PromQL 트러블슈팅
+├─ TCP     OutRsts/InErrs 패턴으로 앱 vs 네트워크 구분
+├─ Pod     재시작·종료이유(OOMKilled)·드롭
+├─ 리소스   CPU Throttling(핵심!)·Mem·FD
+├─ 시스템   API P99·5xx·집계·시간대 비교
+└─ 사례     Throttling 4+ → CPU limit 상향으로 해결
+```
 
-- [ ] **CPU Throttling** (핵심!)
-- [ ] CPU 사용률
-- [ ] Memory 사용률
-- [ ] File Descriptor 사용률
+| 개념 | 한 줄 정의 |
+|------|------|
+| **CPU Throttling** | limit에 걸린 지연(핵심 지표) |
+| **OutRsts/InErrs** | 앱/네트워크 문제 구분 |
+| **P99** | 상위 1% 응답 시간 |
 
-### 4단계: 네트워크 분석
-
-- [ ] 트래픽 증가율 (수신/송신)
-- [ ] TCP 연결 수
-- [ ] TCP 재전송
-- [ ] Connection Tracking 사용률
-
-### 5단계: 시스템 분석
-
-- [ ] API Server 응답 시간
-- [ ] 노드별/Pod별 집계
-- [ ] 시간대별 비교
+PromQL 트러블슈팅의 핵심은 **증상에서 원인으로 좁혀가는 순서(TCP→Pod→리소스→네트워크→시스템)**를 지표로 갖춰두는 것이다. 특히 지연 장애는 사용률이 아니라 **CPU Throttling**을 먼저 의심하자.

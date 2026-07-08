@@ -7,9 +7,17 @@ render_with_liquid: false
 future: true
 ---
 
-이번 시간엔 오늘 진행한 토이플젝 한 것 올리려고 합니다(아직 미완성)
+## 📌 들어가며
 
-```
+이번 글에서는 타이타닉 데이터셋으로 **생존자 분석 EDA**를 진행한다. 결측치 확인·대치(특히 나이의 그룹별 평균 대치)부터, 좌석 등급·성별·연령대에 따른 생존률을 시각화로 파헤친다.
+
+> **EDA 목표** — 단순히 결측치를 채우는 게 아니라, **원래 분포를 훼손하지 않으면서** 데이터를 보완하고, 어떤 요인이 생존에 영향을 주는지 찾는 것이다.
+
+---
+
+## 1. 결측치 확인
+
+```python
 plt.figure(figsize=(8,6))
 msno.matrix(df)
 plt.show()
@@ -17,92 +25,97 @@ plt.show()
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Titanic/1.png)
 
-결측치부터 확인했습니다. age쪽에 좀 있네요 fare는 결측치가 별로 없어서 바로 평균값으로 대치할 예정입니다.
+`age`에 결측치가 꽤 있고 `fare`는 거의 없다. `fare`는 평균으로 바로 대치해도 되지만, **`age`는 그냥 평균을 넣으면 분포가 왜곡**된다.
 
-다만 age는 바로 평균을 대입해버리면 그래프를 그렸을 때 평균만 올라가서 원래의 그래프 형태와 많이 달라집니다.
+---
 
-```
-df['age'].fillna(df['age'].mean(),inplace=True)
+## 2. 나이 결측치 — 전체 평균의 문제
 
-plt.figure(figsize=(8,6))
-
-sns.kdeplot(x=df_base[df_base["age"].notnull()]['age'], color="Blue", shade = True, label="original" )
-sns.kdeplot(x=df['age'],color="red", shade = True, label="tuned")
-
-plt.legend()
-plt.show()
+```python
+df['age'].fillna(df['age'].mean(), inplace=True)
+# original vs tuned 분포 비교(kdeplot)
 ```
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Titanic/2.png)
 
-이렇게 전체 평균쪽으로만 위로 솟은 그래프가 되었습니다. 그래서 age는 세분화해서 각각의 평균을 구해서 그 그룹의 결측치에 맞는 평균값을 대입해보겠습니다.
+> ⚠️ **전체 평균으로 대치하면 평균 지점만 뾰족하게 솟는다.** 결측치가 모두 한 값(평균)으로 채워져, 원래의 완만한 분포 형태가 무너진다. 대치 전후 분포를 항상 비교해야 하는 이유다.
 
+---
+
+## 3. 그룹별 평균 대치 (개선)
+
+성별·좌석 등급으로 세분화해 **각 그룹의 평균**을 결측치에 넣는다.
+
+```python
+df['age'].fillna(
+    df.groupby(["sex","pclass"])['age'].transform('mean'),
+    inplace=True)
 ```
-df['age'].fillna(df.groupby(["sex","pclass"])['age'].transform('mean'),inplace=True)
-
-plt.figure(figsize=(8,6))
-
-sns.kdeplot(x=df_base[df_base["age"].notnull()]['age'], color="Blue", shade = True, label="original" )
-sns.kdeplot(x=df['age'],color="red", shade = True, label="tuned")
-
-plt.legend()
-plt.show()
-```
-
-groupby()와 transform()를 사용하여 각 그룹의 평균값을 넣었습니다. 그리고 그래프를 그렸네요
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Titanic/3.png)
 
-확실히 저번 그래프랑 많이 달라진 것을 알 수 있습니다. 전체적인 모양을 유지하고 볼륨이 커졌습니다. 꼭지점 방향도 더 비슷해졌고요! 이제 이 데이터로 분석을 해봅시다.
+> 💡 **`groupby` + `transform('mean')`**이 핵심이다. `transform`은 그룹 평균을 **원본과 같은 길이로** 반환해, 각 행의 결측치에 그 행이 속한 그룹의 평균을 정확히 매핑한다. 결과적으로 전체 분포 형태를 유지하면서 볼륨만 커진다.
 
-```
-plt.figure()
+---
 
-sns.FacetGrid(df, col = 'pclass', row = 'sex').map(sns.histplot, 'survived')
+## 4. 좌석 등급 & 성별 생존률
 
-plt.show()
+```python
+sns.FacetGrid(df, col='pclass', row='sex').map(sns.histplot, 'survived')
 ```
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Titanic/4.png)
 
-좌석 등급과 성별이 생존에 어떤 영향을 주는지 알아봅시다. 일단 등급이 좋을수록 생존률이 올라갔습니다. 하지만 낮을수록 남자에서 생존률이 급격히 떨어지는 것을 알 수 있습니다.
+**결과**: 등급이 좋을수록 생존률↑. 특히 **등급이 낮을수록 남성의 생존률이 급격히 하락**한다.
 
-```
+---
+
+## 5. 연령대별 생존률
+
+에버랜드 입장권 기준(?)으로 5개 연령대로 나눈다.
+
+```python
 def age_make(x):
-    if x<=3.0:
-        return "baby"
-    elif x<=13.:
-        return "kid"
-    elif x<=18.:
-        return "teenage"
-    elif x<=60.:
-        return "adult"
-    else:
-        return "old"
+    if x <= 3.0:   return "baby"
+    elif x <= 13.: return "kid"
+    elif x <= 18.: return "teenage"
+    elif x <= 60.: return "adult"
+    else:          return "old"
 
-df['cat.age']=df['age'].apply(age_make)
-
-plt.figure(figsize=(12,8))
-
-sns.barplot(data=df,x="cat.age",y="survived", hue="sex",order=['baby','kid','teenage','adult','old'])
-
-plt.show()
+df['cat.age'] = df['age'].apply(age_make)
+sns.barplot(data=df, x="cat.age", y="survived", hue="sex",
+            order=['baby','kid','teenage','adult','old'])
 ```
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Titanic/5.png)
 
-이번엔 연령을 5개의 연령대로 나눴습니다. 기준은 에버랜드 입장권..ㅎㅎ; 근데 old를 60부터로 하향조정했습니다. 표본이 없어서.. 여튼 그래서 나온 연령대와 성별을 기준으로 생존률을 알아봤습니다. 여자는 특이한 점이 연령대가 높아질수록 생존률이 올라갔습니다. 반대로 남자는 떨어지죠.
+| 관찰 | 내용 |
+|------|------|
+| **여성** | 연령대가 **높아질수록 생존률↑** |
+| **남성** | 연령대가 높아질수록 생존률↓ |
 
-```
-plt.figure(figsize=(12,8))
-
-sns.barplot(data=df,x="cat.age",y="survived", hue="pclass",order=['baby','kid','teenage','adult','old'])
-
-plt.show()
-```
+등급(pclass)으로 나눠보면 `kid`는 1·2등급이 전부 생존했다.
 
 ![Desktop View](/assets/img/Bigdata-AI/EDA/Titanic/6.png)
 
-baby와 old연령대는 안그래도 적었었는데 좌석등급으로 또 3개로 나눠서 그런지 각각 그룹의 표본이 부족해보입니다. 따라서 가운데 3개만 보자면 역시 등급이 높을수록 생존률이 올라갔고 kid의 경우엔 1등급과 2등급 좌석을 전부 생존했습니다.
+> 💡 **표본 크기를 항상 의식**하자. baby·old를 등급으로 또 3분할하니 각 그룹 표본이 너무 적어 신뢰하기 어렵다. 세분화는 유용하지만, 나눌수록 그룹당 데이터가 줄어드는 트레이드오프가 있다.
 
-아직 할 게 더 많네요.. 내일 아침까지 마무리하겠습니다!
+---
+
+## 📝 정리
+
+```
+타이타닉 EDA
+├─ 결측치   msno로 확인(age 많음)
+├─ 대치     전체 평균(왜곡) → 그룹별 평균(groupby+transform)
+├─ 분석     등급↑·여성 생존률↑, 낮은 등급 남성 급락
+└─ 주의     세분화 시 표본 부족 유의
+```
+
+| 개념 | 한 줄 정의 |
+|------|------|
+| **EDA** | 데이터를 다각도로 탐색 |
+| **transform('mean')** | 그룹 평균을 원본 길이로 |
+| **분포 비교** | 대치 전후 kdeplot |
+
+타이타닉 EDA의 핵심 교훈은 **결측치 대치는 분포를 지키며 해야 한다**는 것이다. 그룹별 평균 대치로 형태를 유지했고, 등급·성별·연령의 상호작용에서 "여성·고등급 우선 생존"이라는 뚜렷한 패턴을 확인했다.
