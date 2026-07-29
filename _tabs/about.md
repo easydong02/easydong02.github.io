@@ -20,4 +20,4 @@ order: 4
 ## Contacts
 [![Tech Blog Badge](https://img.shields.io/badge/-Tech%20blog-black?style=flat-square&logo=github&link=https://easydong02.github.io/)](https://easydong02.github.io/)
 [![Gmail Badge](https://img.shields.io/badge/Gmail-d14836?style=flat-square&logo=Gmail&logoColor=white&link=mailto:easydong02@gmail.com)](mailto:easydong02@gmail.com)
-[![Notion](https://img.shields.io/badge/-Portfolio-black?style=flat-square&logo=notion&link=https://cooing-physician-f66.notion.site/d254cb9495cf4ad8995eacada18c8238)](https://easydong02.notion.site/d254cb9495cf4ad8995eacada18c8238?pvs=4)
+[![Notion](https://img.shields.io/badge/-Portfolio-black?style=flat-square&logo=notion&link=https://cooing-physician-f66.notion.site/d254cb9495cf4ad8995eacada18c8238)](https://sdh-portpolio.com/)
