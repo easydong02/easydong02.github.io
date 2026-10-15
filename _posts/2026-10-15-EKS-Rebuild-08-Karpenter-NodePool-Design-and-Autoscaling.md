@@ -1,6 +1,6 @@
 ---
 title: "[EKS 재구축 #8] Karpenter NodePool 설계와 오토스케일링 — 라벨과 taint, 그리고 노드가 늘고 줄어드는 원리"
-date: 2026-10-15 12:00:00 +0900
+date: 2026-10-15 00:30:00 +0900
 categories: [Infra, Kubernetes]
 tags: [karpenter, eks, kubernetes, nodepool, ec2nodeclass, taint, toleration, node-affinity, autoscaling, devops]
 mermaid: true
