@@ -348,7 +348,7 @@ kubectl get pod -o wide -l app=httpd
 >     cpu: "8"      # 2vCPU × 4대 = replicas 4에 딱 맞음
 > ```
 >
-> 8편 2-1의 v1 변경점(`nodeClassRef`의 `group/kind`, `expireAfter` 위치, 정책 이름, `consolidateAfter`)이 그대로 적용된 모습이다. `limits.cpu: "8"`은 anti-affinity 때문에 파드 4개가 노드 4대를 원하니, 2vCPU 노드 4대가 딱 들어가는 값이다.
+> 8편 2-1의 v1 변경점(`nodeClassRef`의 `group/kind`, `expireAfter` 위치, 정책 이름, `consolidateAfter`)이 그대로 적용된 모습이다. (**후속**: 강의 파일을 그대로 적용했을 때 어떤 에러가 나고 어떻게 이 모양에 도달했는지는 [13편 부록](/posts/EKS-Rebuild-13-Helm-Redis-Bitnami-Image-Policy/)에 있다.) `limits.cpu: "8"`은 anti-affinity 때문에 파드 4개가 노드 4대를 원하니, 2vCPU 노드 4대가 딱 들어가는 값이다.
 
 ### 2-5. 🔦 Karpenter와 함께 쓸 때
 
@@ -502,4 +502,4 @@ maxSkew를 계산할 때 노드가 없는 구역은 아예 세지 않는다는 �
 - [Karpenter — Scheduling (Topology Spread)](https://karpenter.sh/docs/concepts/scheduling/)
 - [kubernetes-sigs/descheduler](https://github.com/kubernetes-sigs/descheduler) — 스케일 인 후 치우친 분포 재조정
 
-> 1-5와 2-1, 2-4의 실습 결과는 강의 화면 기준이다. 2-3의 "노드가 없는 구역" 설명과 2-6의 "기본 분산"은 강의에 없는, 내가 덧붙인 설명이다. 2-4의 `multiaz` NodePool(v1)은 8편의 NodePool을 바탕으로 옮겨 쓴 것으로, 아직 실제 클러스터에 적용해보지는 않았다.
+> 1-5와 2-1, 2-4의 실습 결과는 강의 화면 기준이다. 2-3의 "노드가 없는 구역" 설명과 2-6의 "기본 분산"은 강의에 없는, 내가 덧붙인 설명이다. 2-4의 `multiaz` NodePool(v1)은 8편의 NodePool을 바탕으로 옮겨 쓴 것이다. 실제로 적용하며 만난 에러와 해결 과정은 [13편 부록](/posts/EKS-Rebuild-13-Helm-Redis-Bitnami-Image-Policy/)에 정리했다.
