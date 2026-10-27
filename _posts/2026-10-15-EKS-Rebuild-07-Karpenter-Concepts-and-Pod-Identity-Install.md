@@ -169,7 +169,7 @@ flowchart TB
 | Helm values에 `eks.amazonaws.com/role-arn` 어노테이션 | **삭제.** 모듈이 `kube-system/karpenter` SA에 **Pod Identity association**을 자동 생성 (`create_pod_identity_association`) |
 | `KarpenterNodeRole` 생성 + 정책 연결 | 모듈이 노드 역할 생성 (`create_node_iam_role` 기본 `true`) |
 | `aws-auth` ConfigMap에 노드 역할 등록 | 모듈이 **Access Entry** 생성 (`create_access_entry` 기본 `true`). 이 클러스터는 `authentication_mode = "API"`라 aws-auth는 **아예 동작하지 않는다** (2편) |
-| 스크립트로 서브넷·보안그룹에 `karpenter.sh/discovery` 태그 | 2편에서 `main.tf`에 미리 넣어둠 (`private_subnet_tags`, `node_security_group_tags`) |
+| 스크립트로 서브넷·보안그룹에 `karpenter.sh/discovery` 태그 | 2편에서 `main.tf`에 미리 넣어둠 (`private_subnet_tags`, `node_security_group_tags`) — ⚠️ 보안그룹 태그는 대상이 틀렸다. [15편](/posts/EKS-Rebuild-15-Karpenter-Node-DNS-Failure-Security-Group/) 참고 |
 | (없음) | 모듈이 스팟 회수 알림용 **SQS 큐 + EventBridge 규칙** 생성 |
 
 ### 2-2. IAM 역할이 왜 두 개인가
@@ -250,6 +250,8 @@ karpenter_node_iam_role_name = "KarpenterNodeRole-mydev"   # EC2NodeClass의 rol
 | `private_subnet_tags` | 서브넷에 붙인 같은 **태그** (Karpenter가 노드를 띄울 서브넷을 찾는 표식) |
 
 즉 2편에서 **"나중에 Karpenter가 올라갈 자리와 길잡이 표식"** 을 미리 깔아둔 것이고, 실제 설치는 이번이 처음이다.
+
+> **⚠️ 후속 (15편)**: 이 중 `node_security_group_tags`는 **잘못된 SG에** 태그를 단 것이었다. 고정 노드는 EKS 클러스터 기본 SG를 쓰는데 Karpenter 노드만 모듈의 노드 SG를 쓰게 되어, 두 노드 그룹 사이의 DNS가 막혔다. 강의 스크립트처럼 **클러스터 기본 SG**에 달아야 한다. 증상과 수정 과정은 [15편](/posts/EKS-Rebuild-15-Karpenter-Node-DNS-Failure-Security-Group/)에 정리했다.
 
 ### 2-5. Terraform 모듈을 썼는데 왜 Helm 설치가 또 필요한가
 

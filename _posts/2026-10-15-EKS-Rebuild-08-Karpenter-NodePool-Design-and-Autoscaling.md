@@ -88,7 +88,7 @@ aws ec2 describe-security-groups --filters "Name=tag:karpenter.sh/discovery,Valu
   --query 'SecurityGroups[].GroupId'
 ```
 
-태그가 붙은 보안 그룹이 여러 개면 **노드에 전부 붙는다.** 의도한 보안 그룹 하나에만 태그를 다는 게 안전하다.
+태그가 붙은 보안 그룹이 여러 개면 **노드에 전부 붙는다.** 의도한 보안 그룹 하나에만 태그를 다는 게 안전하다. 그리고 그 하나는 **고정 노드와 같은 SG**(EKS 클러스터 기본 SG)여야 한다. 다른 SG에 달면 Karpenter 노드와 고정 노드가 서로 통신하지 못한다 — 실제로 겪은 장애를 [15편](/posts/EKS-Rebuild-15-Karpenter-Node-DNS-Failure-Security-Group/)에 정리했다.
 
 ### 1-3. Karpenter가 인스턴스 프로파일을 직접 만든다
 
